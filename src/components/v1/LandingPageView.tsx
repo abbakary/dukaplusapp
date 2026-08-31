@@ -108,7 +108,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             <button type="button" onClick={() => scrollTo('process')} className="hover:text-slate-900 cursor-pointer">{isSw ? 'Jinsi inavyofanya' : 'How it works'}</button>
             <button type="button" onClick={() => scrollTo('plans')} className="hover:text-slate-900 cursor-pointer">{isSw ? 'Mipango' : 'Plans'}</button>
             <button type="button" onClick={() => scrollTo('showcase')} className="hover:text-slate-900 cursor-pointer">{isSw ? 'Onyesha' : 'Showcase'}</button>
-            <button type="button" onClick={() => scrollTo('providers')} className="hover:text-slate-900 cursor-pointer">{isSw ? 'Kwa watoa huduma' : 'For providers'}</button>
+            <button type="button" onClick={() => scrollTo('features')} className="hover:text-slate-900 cursor-pointer">{isSw ? 'Kwa biashara yako' : 'For your business'}</button>
           </nav>
           <div className="flex items-center gap-3">
             <button type="button" onClick={onOpenLogin} className="text-sm font-medium text-slate-600 hover:text-slate-900 cursor-pointer">
@@ -120,7 +120,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               className="px-4 py-2 rounded-full text-sm font-semibold text-white cursor-pointer shadow-sm hover:opacity-90 transition-opacity"
               style={{ background: TEAL }}
             >
-              {isSw ? 'Anza bure' : 'Get started'}
+              {isSw ? 'Anza sasa' : 'Get started'}
             </button>
           </div>
         </div>
@@ -151,7 +151,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                 className="px-6 py-3 rounded-full text-sm font-bold text-white cursor-pointer shadow-md"
                 style={{ background: TEAL }}
               >
-                {isSw ? 'Anza bure' : 'Get started free'}
+                {isSw ? 'Anza sasa' : 'Get started'}
               </button>
               <button
                 type="button"
@@ -226,7 +226,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
         </div>
       </section>
 
-      {/* Showcase — demo video + provider ads */}
+      {/* Showcase — demo video & feature highlights */}
       <section id="showcase" className="py-20 bg-[#fafafa]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <p className="text-xs font-bold uppercase tracking-widest text-teal-700">02 / {isSw ? 'Onyesha' : 'Showcase'}</p>
@@ -235,8 +235,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           </h2>
           <p className="mt-3 text-slate-600 max-w-2xl">
             {isSw
-              ? 'Video fupi ya mfumo, pamoja na matangazo na vipengele vilivyochaguliwa na msimamizi wa jukwaa.'
-              : 'A short app demo plus curated ads and feature highlights managed by the platform provider.'}
+              ? 'Video fupi ya mfumo na vipengele vilivyochaguliwa — uone jinsi Duka+ inavyosaidia duka lako kila siku.'
+              : 'A short app demo and curated highlights — see how Duka+ helps your shop every day.'}
           </p>
 
           {featured && (
@@ -266,7 +266,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           {gallery.length > 0 && (
             <div className="mt-14">
               <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500 mb-4">
-                {isSw ? 'Matangazo & vipengele' : 'Ads & highlights'}
+                {isSw ? 'Vipengele & mafunzo' : 'Features & tutorials'}
               </h3>
               <div className="relative">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -322,13 +322,64 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <p className="text-xs font-bold uppercase tracking-widest text-teal-700">03 / {isSw ? 'Mipango' : 'Plans'}</p>
           <h2 className="mt-2 text-3xl sm:text-4xl font-serif font-bold text-slate-900">
-            {isSw ? 'Chagua njia yako' : 'Choose your path'}
+            {isSw ? 'Mipango ya kila ukubwa wa biashara' : 'Plans for every business size'}
           </h2>
+          <p className="mt-3 text-slate-600 max-w-2xl">
+            {isSw
+              ? 'Bei wazi, bila kifurushi cha bure — chagua kulingana na idadi ya matawi, wafanyakazi, na vipengele unavyohitaji.'
+              : 'Transparent pricing with no free tier — pick the plan that matches your branches, staff, and feature needs.'}
+          </p>
           <div className="mt-12 grid md:grid-cols-3 gap-6">
             {[
-              { name: isSw ? 'Anza Bure' : 'Free Starter', price: 'TZS 0', tag: isSw ? 'Kwa maduka mapya' : 'New shops', popular: false, feats: [isSw ? 'POS msingi' : 'Core POS', isSw ? 'Bidhaa 100' : '100 products', isSw ? 'Mteja 1' : '1 branch'] },
-              { name: 'Biashara Pro', price: 'TZS 49K/mo', tag: isSw ? 'Inayopendekezwa' : 'Most popular', popular: true, feats: [isSw ? 'Matawi mengi' : 'Multi-branch', isSw ? 'TRA EFD' : 'TRA EFD', isSw ? 'Wafanyakazi & RBAC' : 'Staff & RBAC', isSw ? 'Ripoti za AI' : 'AI reports'] },
-              { name: 'Enterprise', price: isSw ? 'Wasiliana nasi' : 'Contact us', tag: isSw ? 'Minyororo ya maduka' : 'Store chains', popular: false, feats: [isSw ? 'API & usaidizi' : 'API & support', isSw ? 'SLA ya juu' : 'Premium SLA', isSw ? 'Onboarding maalum' : 'Custom onboarding'] },
+              {
+                name: isSw ? 'Mwanzo' : 'Starter',
+                price: 'TZS 39,000',
+                period: isSw ? '/mwezi' : '/mo',
+                tag: isSw ? 'Duka moja linaloanza' : 'Single-shop launch',
+                popular: false,
+                contactUs: false,
+                feats: [
+                  isSw ? 'Tawi 1 na wafanyakazi 3' : '1 branch, up to 3 staff',
+                  isSw ? 'POS kamili (M-Pesa, pesa taslimu, mkopo)' : 'Full POS (M-Pesa, cash, credit)',
+                  isSw ? 'Hifadhi & bidhaa hadi 500' : 'Inventory up to 500 products',
+                  isSw ? 'Wateja, madeni & wasambazaji' : 'Customers, debt & suppliers',
+                  isSw ? 'Ripoti za mauzo & stoo' : 'Sales & stock reports',
+                  isSw ? 'Simu + wavuti (offline sync)' : 'Mobile + web (offline sync)',
+                ],
+              },
+              {
+                name: 'Biashara Pro',
+                price: 'TZS 79,000',
+                period: isSw ? '/mwezi' : '/mo',
+                tag: isSw ? 'Inayopendekezwa' : 'Most popular',
+                popular: true,
+                contactUs: false,
+                feats: [
+                  isSw ? 'Matawi 5 na wafanyakazi 15' : 'Up to 5 branches, 15 staff',
+                  isSw ? 'Udhibiti wa majukumu (RBAC)' : 'Role-based staff permissions',
+                  isSw ? 'Risiti za TRA EFD & VAT 18%' : 'TRA EFD receipts & 18% VAT',
+                  isSw ? 'Mkopo wa wateja & malipo ya awamu' : 'Customer credit & installments',
+                  isSw ? 'Ripoti za faida, COGS & posho' : 'Profit, COGS & payroll reports',
+                  isSw ? 'Ushauri wa AI & utabiri wa stoo' : 'AI insights & stock forecasting',
+                  isSw ? 'Manunuzi, gharama & kalenda' : 'Purchasing, expenses & calendar',
+                ],
+              },
+              {
+                name: isSw ? 'Biashara Kubwa' : 'Enterprise',
+                price: isSw ? 'Maalum' : 'Custom',
+                period: isSw ? ' bei' : ' pricing',
+                tag: isSw ? 'Minyororo ya maduka' : 'Store chains & groups',
+                popular: false,
+                contactUs: true,
+                feats: [
+                  isSw ? 'Matawi & wafanyakazi wasio na kikomo' : 'Unlimited branches & staff',
+                  isSw ? 'API, ushirikiano & uhamisho wa data' : 'API access, integrations & data migration',
+                  isSw ? 'Msaada wa kipekee & onboarding maalum' : 'Dedicated support & custom onboarding',
+                  isSw ? 'SLA ya juu & ufuatiliaji wa mfumo' : 'Premium SLA & system monitoring',
+                  isSw ? 'Ripoti za kundi & dashbodi ya meneja' : 'Group reports & executive dashboard',
+                  isSw ? 'Usimamizi wa leseni, TIN & KYC' : 'License, TIN & compliance workflows',
+                ],
+              },
             ].map(plan => (
               <div
                 key={plan.name}
@@ -340,12 +391,15 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                   </span>
                 )}
                 <h3 className="font-serif font-bold text-xl">{plan.name}</h3>
-                <div className="text-2xl font-black mt-2">{plan.price}</div>
+                <div className="mt-2 flex items-baseline gap-1">
+                  <span className="text-2xl font-black">{plan.price}</span>
+                  <span className="text-sm text-slate-500 font-medium">{plan.period}</span>
+                </div>
                 <p className="text-xs text-slate-500 mt-1">{plan.tag}</p>
-                <ul className="mt-6 space-y-2 flex-1">
+                <ul className="mt-6 space-y-2.5 flex-1">
                   {plan.feats.map(f => (
-                    <li key={f} className="flex items-center gap-2 text-sm text-slate-600">
-                      <CheckCircle2 className="w-4 h-4 text-teal-600 shrink-0" /> {f}
+                    <li key={f} className="flex items-start gap-2 text-sm text-slate-600">
+                      <CheckCircle2 className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" /> {f}
                     </li>
                   ))}
                 </ul>
@@ -355,7 +409,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                   className={`mt-6 w-full py-2.5 rounded-full text-sm font-bold cursor-pointer ${plan.popular ? 'text-white' : 'border border-slate-200 bg-white text-slate-800'}`}
                   style={plan.popular ? { background: TEAL } : undefined}
                 >
-                  {isSw ? 'Anza' : 'Get started'}
+                  {'contactUs' in plan && plan.contactUs
+                    ? (isSw ? 'Wasiliana nasi' : 'Contact us')
+                    : (isSw ? 'Chagua mpango' : 'Choose plan')}
                 </button>
               </div>
             ))}
@@ -363,24 +419,24 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
         </div>
       </section>
 
-      {/* Providers */}
-      <section id="providers" className="py-20 text-white" style={{ background: `linear-gradient(135deg, ${TEAL} 0%, #0f766e 100%)` }}>
+      {/* Client benefits */}
+      <section id="features" className="py-20 text-white" style={{ background: `linear-gradient(135deg, ${TEAL} 0%, #0f766e 100%)` }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 grid lg:grid-cols-2 gap-12 items-center">
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-teal-100">04 / {isSw ? 'Watoa huduma' : 'Providers'}</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-teal-100">04 / {isSw ? 'Wateja' : 'For clients'}</p>
             <h2 className="mt-2 text-3xl sm:text-4xl font-serif font-bold">
-              {isSw ? 'Imejengwa kwa watoa huduma wa ERP' : 'Built for platform providers'}
+              {isSw ? 'Imejengwa kwa wamiliki wa maduka' : 'Built for shop owners'}
             </h2>
             <p className="mt-4 text-teal-50 leading-relaxed">
               {isSw
-                ? 'Simamia maduka, matangazo ya ukurasa wa mwanzo, na ufuatiliaji wa mfumo kutoka dashbodi ya Super Admin.'
-                : 'Manage tenants, landing page showcase content, and platform telemetry from the Super Admin dashboard.'}
+                ? 'Simamia mauzo, stoo, wateja, madeni, na risiti za TRA — yote kutoka simu au kompyuta, bila foleni wala karatasi nyingi.'
+                : 'Run sales, stock, customers, credit, and TRA receipts — from phone or desktop, without queues or paperwork.'}
             </p>
             <div className="mt-8 flex flex-wrap gap-6 text-sm">
               {[
-                { v: '20+', l: isSw ? 'Biashara za mfano' : 'Sample tenants' },
-                { v: isSw ? 'Onyesha' : 'Showcase', l: isSw ? 'Video & picha' : 'Video & images' },
-                { v: 'RBAC', l: isSw ? 'Udhibiti kamili' : 'Full control' },
+                { v: 'POS', l: isSw ? 'Mauzo haraka ~2s' : 'Fast checkout ~2s' },
+                { v: 'TRA', l: isSw ? 'Risiti za EFD' : 'EFD receipts' },
+                { v: '20+', l: isSw ? 'Aina za biashara' : 'Business types' },
               ].map(s => (
                 <div key={s.l}>
                   <div className="text-xl font-black">{s.v}</div>
@@ -390,18 +446,18 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             </div>
             <button
               type="button"
-              onClick={onOpenLogin}
+              onClick={() => startRegister()}
               className="mt-8 px-6 py-3 rounded-full bg-white text-teal-800 text-sm font-bold cursor-pointer hover:bg-teal-50"
             >
-              {isSw ? 'Ingia kama msimamizi' : 'Sign in as admin'}
+              {isSw ? 'Jisajili sasa' : 'Register now'}
             </button>
           </div>
           <div className="space-y-3">
             {[
-              isSw ? 'Chapisha video na matangazo kwenye ukurasa wa mwanzo' : 'Publish videos and ads on the landing page',
-              isSw ? 'Simamia maduka na mipango ya SaaS' : 'Manage tenants and SaaS plans',
-              isSw ? 'Tuma matangazo ya jukwaa kwa maduka' : 'Send platform broadcasts to stores',
-              isSw ? 'Fuatilia TRA, SMS, na sync telemetry' : 'Monitor TRA, SMS, and sync telemetry',
+              isSw ? 'Uza haraka na POS — M-Pesa, pesa taslimu, mkopo, na stoo inasasishwa papo hapo' : 'Sell fast with POS — M-Pesa, cash, credit, and instant stock updates',
+              isSw ? 'Simamia bidhaa, wateja, madeni ya wateja, na wasambazaji mahali pamoja' : 'Manage products, customers, receivables, and suppliers in one place',
+              isSw ? 'Toa risiti za TRA EFD na VAT 18% ili kufuata sheria za mapato' : 'Issue TRA EFD receipts with 18% VAT for full tax compliance',
+              isSw ? 'Angalia ripoti za faida, mauzo, stoo chini, na utendaji wa wafanyakazi kwa wakati halisi' : 'View profit, sales, low-stock, and staff performance reports in real time',
             ].map((t, i) => (
               <div key={t} className="flex items-start gap-3 p-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
                 <span className="text-teal-200 font-mono text-sm">{String(i + 1).padStart(2, '0')}</span>
@@ -425,7 +481,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             className="mt-8 px-8 py-3.5 rounded-full text-sm font-bold text-white cursor-pointer shadow-md"
             style={{ background: TEAL }}
           >
-            {isSw ? 'Jisajili bure' : 'Register free'}
+            {isSw ? 'Jisajili sasa' : 'Register now'}
           </button>
         </div>
       </section>
@@ -443,7 +499,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             </p>
           </div>
           {[
-            { h: 'Product', links: [isSw ? 'Jinsi inavyofanya' : 'How it works', isSw ? 'Mipango' : 'Plans', isSw ? 'Onyesha' : 'Showcase'] },
+            { h: 'Product', links: [isSw ? 'Jinsi inavyofanya' : 'How it works', isSw ? 'Mipango' : 'Plans', isSw ? 'Kwa biashara yako' : 'For your business'] },
             { h: 'Company', links: [isSw ? 'Kuhusu' : 'About', isSw ? 'Wasiliana' : 'Contact'] },
             { h: 'Legal', links: ['Privacy', 'Terms', 'TRA EFD'] },
           ].map(col => (
