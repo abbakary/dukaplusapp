@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ArrowLeft, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores';
+import { DEMO_ACCOUNTS, DEMO_PASSWORD } from '@/lib/apiConfig';
 import { t } from '@/lib/utils';
 
 const TEAL = '#0d9488';
@@ -79,6 +80,21 @@ export function LoginPage() {
                   {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+            </div>
+            <p className="text-[11px] text-slate-500">
+              {isSw ? 'Akaunti za mfano (nenosiri: demo123)' : 'Demo accounts (password: demo123)'}
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {DEMO_ACCOUNTS.slice(0, 6).map(demo => (
+                <button
+                  key={demo.email}
+                  type="button"
+                  onClick={() => { setEmail(demo.email); setPassword(DEMO_PASSWORD); }}
+                  className="px-2.5 py-1 rounded-full text-[10px] font-semibold border border-slate-200 bg-slate-50 text-slate-600 hover:border-teal-400 hover:text-teal-800 cursor-pointer"
+                >
+                  {isSw ? demo.labelSw : demo.label}
+                </button>
+              ))}
             </div>
             <button
               type="submit"

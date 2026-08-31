@@ -1,6 +1,7 @@
 import { fetchAllPages, unwrapPage } from './pagination';
+import { getApiBaseUrl } from './apiConfig';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+const API_BASE = getApiBaseUrl();
 
 class ApiClient {
   private accessToken: string | null = null;

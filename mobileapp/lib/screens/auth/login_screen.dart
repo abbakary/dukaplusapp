@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/config/demo_accounts.dart';
 import '../../providers/auth_provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/locale_provider.dart';
@@ -173,6 +174,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               ),
                             ),
                             const SizedBox(height: 8),
+                            Text(
+                              l10n.demoAccountsHint,
+                              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: DemoAccounts.accounts.map((demo) {
+                                return ActionChip(
+                                  label: Text(demo.label, style: const TextStyle(fontSize: 11)),
+                                  onPressed: isLoading
+                                      ? null
+                                      : () {
+                                          _emailCtrl.text = demo.email;
+                                          _passCtrl.text = DemoAccounts.demoPassword;
+                                        },
+                                );
+                              }).toList(),
+                            ),
+                            const SizedBox(height: 12),
                             SizedBox(
                               width: double.infinity,
                               height: 52,

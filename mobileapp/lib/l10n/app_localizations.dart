@@ -46,6 +46,10 @@ class AppLocalizations {
 
   String get welcomeBack => t('Welcome back', 'Karibu tena');
   String get signInSubtitle => t('Sign in to your account', 'Ingia kwenye akaunti yako');
+  String get demoAccountsHint => t(
+    'Demo accounts (password: demo123) — tap to fill',
+    'Akaunti za mfano (nenosiri: demo123) — gusa kujaza',
+  );
   String get posTagline => t('POS & Business Management', 'POS & Usimamizi wa Biashara');
   String get email => t('Email address', 'Barua pepe');
   String get password => t('Password', 'Nenosiri');

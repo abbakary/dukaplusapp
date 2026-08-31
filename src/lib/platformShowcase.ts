@@ -1,3 +1,5 @@
+import { getApiBaseUrl } from '@/lib/apiConfig';
+
 export interface PlatformShowcaseItem {
   id: string;
   title: string;
@@ -82,7 +84,7 @@ export function showcaseToApiPayload(item: Partial<PlatformShowcaseItem>): Recor
 
 export async function fetchPublicShowcase(): Promise<PlatformShowcaseItem[]> {
   try {
-    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || '/api/v1'}/platform/showcase`);
+    const res = await fetch(`${getApiBaseUrl()}/platform/showcase`);
     if (!res.ok) return DEFAULT_SHOWCASE_ITEMS;
     const data = (await res.json()) as Record<string, unknown>[];
     if (!data.length) return DEFAULT_SHOWCASE_ITEMS;

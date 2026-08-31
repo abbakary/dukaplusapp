@@ -200,9 +200,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
         de.type == DioExceptionType.unknown) {
       final msg = de.message ?? '';
       if (msg.contains('XMLHttpRequest') || msg.contains('CORS')) {
-        return 'Cannot reach the local API. Start the backend on port 8000, then hot restart the app.';
+        return 'Cannot reach the API. Check CORS on the backend or your network connection.';
       }
-      return 'Unable to reach server. Start backend (port 8000) and check your connection.';
+      return 'Unable to reach server. Check your internet connection and try again.';
     }
     return 'Server error (${status ?? 'unknown'}). Please try again.';
   }
