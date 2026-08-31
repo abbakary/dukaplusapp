@@ -26,6 +26,7 @@ import {
 import { BusinessType, Language, UserRole, VendorApplication, AuthUser } from '@/types/v1';
 import { ALL_BUSINESS_TYPES, getBusinessProfile } from '@/lib/businessEngine';
 import { api } from '@/lib/api';
+import { DEMO_ACCOUNTS, DEMO_PASSWORD } from '@/lib/apiConfig';
 import { mapApiUserToAuthUser } from '@/lib/authBridge';
 import confetti from 'canvas-confetti';
 
@@ -98,7 +99,7 @@ export const AuthModalOrView: React.FC<AuthModalOrViewProps> = ({
       onLoginSuccess(mapApiUserToAuthUser(me as Parameters<typeof mapApiUserToAuthUser>[0]));
       onClose();
     } catch {
-      setLoginError(isSw ? 'Imeshindikana kuingia. Hakikisha backend inaendesha na email/password ni sahihi.' : 'Login failed. Ensure backend is running and credentials are correct.');
+      setLoginError(isSw ? 'Imeshindikana kuingia. Angalia barua pepe na nenosiri.' : 'Login failed. Check email and password.');
     } finally {
       setLoginLoading(false);
     }
@@ -285,6 +286,22 @@ export const AuthModalOrView: React.FC<AuthModalOrViewProps> = ({
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                </div>
+
+                <p className="text-[10px] text-[#605E5C]">
+                  {isSw ? 'Akaunti za mfano (demo123):' : 'Demo accounts (password: demo123):'}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {DEMO_ACCOUNTS.slice(0, 6).map(demo => (
+                    <button
+                      key={demo.email}
+                      type="button"
+                      onClick={() => { setLoginEmail(demo.email); setLoginPassword(DEMO_PASSWORD); }}
+                      className="px-2 py-1 rounded-md text-[10px] font-semibold border border-[#EDEBE9] bg-[#F8F8F8] text-[#605E5C] hover:border-[#6264A7] cursor-pointer"
+                    >
+                      {isSw ? demo.labelSw : demo.label}
+                    </button>
+                  ))}
                 </div>
 
                 <button
