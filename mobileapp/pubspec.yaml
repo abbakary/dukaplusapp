@@ -1,0 +1,76 @@
+name: mobileapp
+description: "Duka+ POS & Business Management Mobile App"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: '>=3.22.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # ── State Management (Riverpod) ──────────────────────────────────
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # ── Routing ──────────────────────────────────────────────────────
+  go_router: ^14.2.7
+
+  # ── Data / Serialization (Freezed) ───────────────────────────────
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
+
+  # ── HTTP & API ────────────────────────────────────────────────────
+  dio: ^5.7.0
+  retrofit: ^4.4.1
+
+  # ── Local Storage ─────────────────────────────────────────────────
+  shared_preferences: ^2.3.3
+  flutter_secure_storage: ^9.2.2
+
+  # ── Charts ────────────────────────────────────────────────────────
+  fl_chart: ^0.69.0
+
+  # ── UI ────────────────────────────────────────────────────────────
+  shimmer: ^3.0.0
+  google_fonts: ^6.2.1
+  animations: ^2.0.11
+  flutter_staggered_animations: ^1.1.1
+  cached_network_image: ^3.4.1
+  percent_indicator: ^4.2.3
+  gap: ^3.0.1
+  webview_flutter: ^4.10.0
+  smooth_page_indicator: ^1.2.0+3
+
+  # ── Utils ─────────────────────────────────────────────────────────
+  intl: ^0.20.2
+  uuid: ^4.5.1
+  equatable: ^2.0.5
+  collection: ^1.18.0
+  path_provider: ^2.1.4
+
+  # ── QR / Barcode Scanner ──────────────────────────────────────────
+  mobile_scanner: ^6.0.2
+  qr_flutter: ^4.1.0
+  share_plus: ^10.1.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.12
+  riverpod_generator: ^2.4.3
+  freezed: ^2.5.7
+  json_serializable: ^6.8.0
+  retrofit_generator: ^9.1.5
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/lottie/
