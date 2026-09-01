@@ -140,6 +140,10 @@ export function canAccessVendorTab(user: AuthUser | null | undefined, tab: strin
       const { isOwner, isManager, isAccountant } = roleFlags(user);
       return isOwner || isManager || isAccountant;
     },
+    'transaction-history': () => {
+      const { isOwner, isManager, isAccountant, isCashier } = roleFlags(user);
+      return isOwner || isManager || isAccountant || isCashier;
+    },
     'pending-transactions': () => canAccessVendorTab(user, 'pos'),
     'staff-site': () => canClaimOwnDailyStipend(user) || canSeeExpenses(user) || canAccessVendorTab(user, 'pos'),
   };

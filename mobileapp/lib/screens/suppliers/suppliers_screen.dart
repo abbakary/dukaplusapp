@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
@@ -149,17 +149,17 @@ class _SupplierTile extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: supplier.outstandingPayable > 0 ? AppColors.warning.withOpacity(0.4) : AppColors.border),
+        border: Border.all(color: supplier.outstandingPayable > 0 ? AppColors.warning.withValues(alpha: 0.4) : AppColors.border),
       ),
       clipBehavior: Clip.antiAlias,
       child: Material(
         color: Colors.white,
         child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        splashColor: primary.withOpacity(0.08),
+        splashColor: primary.withValues(alpha: 0.08),
         leading: CircleAvatar(
           radius: 22,
-          backgroundColor: primary.withOpacity(0.15),
+          backgroundColor: primary.withValues(alpha: 0.15),
           child: Text(supplier.initials,
             style: TextStyle(color: primary, fontWeight: FontWeight.w700, fontSize: 14)),
         ),

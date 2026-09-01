@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -40,13 +40,13 @@ class SettingsScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 gradient: AppColors.gradientForBusiness(bizType),
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: [BoxShadow(color: primary.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4))],
+                boxShadow: [BoxShadow(color: primary.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4))],
               ),
               child: Row(
                 children: [
                   CircleAvatar(
                     radius: 30,
-                    backgroundColor: Colors.white.withOpacity(0.25),
+                    backgroundColor: Colors.white.withValues(alpha: 0.25),
                     child: Text(
                       (user?.name ?? 'U').substring(0, 1).toUpperCase(),
                       style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Colors.white),
@@ -60,12 +60,12 @@ class SettingsScreen extends ConsumerWidget {
                         Text(user?.name ?? 'Owner',
                           style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700)),
                         Text(user?.email ?? '',
-                          style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)),
+                          style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
                         const SizedBox(height: 4),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(user?.businessName ?? 'My Store',
@@ -349,7 +349,7 @@ class _SettingsTile extends StatelessWidget {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: primary.withOpacity(0.1), borderRadius: BorderRadius.circular(8),
+            color: primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: primary, size: 18),
         ),
@@ -424,7 +424,7 @@ class _BusinessTypeSheetState extends State<_BusinessTypeSheet> {
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
                       decoration: BoxDecoration(
-                        color: sel ? color.withOpacity(0.1) : AppColors.surfaceVariant,
+                        color: sel ? color.withValues(alpha: 0.1) : AppColors.surfaceVariant,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: sel ? color : AppColors.border, width: sel ? 2 : 1),
                       ),

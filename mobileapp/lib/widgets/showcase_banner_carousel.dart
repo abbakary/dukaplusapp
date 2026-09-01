@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../../data/models/showcase_item.dart';
 import '../../l10n/app_localizations.dart';
@@ -86,7 +86,7 @@ class _ShowcaseBannerCarouselState extends State<ShowcaseBannerCarousel> {
                             gradient: LinearGradient(
                               begin: Alignment.bottomCenter,
                               end: Alignment.topCenter,
-                              colors: [Colors.black.withOpacity(0.75), Colors.transparent],
+                              colors: [Colors.black.withValues(alpha: 0.75), Colors.transparent],
                             ),
                           ),
                         ),
@@ -117,7 +117,7 @@ class _ShowcaseBannerCarouselState extends State<ShowcaseBannerCarousel> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.85),
+                                    color: Colors.white.withValues(alpha: 0.85),
                                     fontSize: 11,
                                   ),
                                 ),

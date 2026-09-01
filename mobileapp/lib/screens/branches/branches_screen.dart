@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
@@ -79,7 +79,7 @@ class _BranchSummaryCard extends ConsumerWidget {
       decoration: BoxDecoration(
         gradient: AppColors.gradientForBusiness('retail'),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 14, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 14, offset: const Offset(0, 4))],
       ),
       child: Column(
         children: [
@@ -100,7 +100,7 @@ class _BranchSummaryCard extends ConsumerWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(l10n.monthlyRevenue, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 11)),
+                  Text(l10n.monthlyRevenue, style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 11)),
                   Text(AppFormatters.compact(totalGmv),
                     style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
                 ],
@@ -108,7 +108,7 @@ class _BranchSummaryCard extends ConsumerWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(l10n.stockValue, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 11)),
+                  Text(l10n.stockValue, style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 11)),
                   Text(AppFormatters.compact(totalStock),
                     style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
                 ],
@@ -131,7 +131,7 @@ class _SummaryItem extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     children: [
       Text(value, style: TextStyle(color: color, fontSize: 20, fontWeight: FontWeight.w700)),
-      Text(label, style: TextStyle(color: color.withOpacity(0.8), fontSize: 10)),
+      Text(label, style: TextStyle(color: color.withValues(alpha: 0.8), fontSize: 10)),
     ],
   );
 }
@@ -159,7 +159,7 @@ class _BranchCard extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.white, borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -169,7 +169,7 @@ class _BranchCard extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: primary.withOpacity(0.1), borderRadius: BorderRadius.circular(10),
+                  color: primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(Icons.store_rounded, color: primary, size: 22),
               ),
@@ -187,7 +187,7 @@ class _BranchCard extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _statusColor.withOpacity(0.1),
+                  color: _statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(branch.status.name.toUpperCase(),

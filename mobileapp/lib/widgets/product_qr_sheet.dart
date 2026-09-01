@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
@@ -290,7 +290,7 @@ class _Header extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
+                color: Colors.white.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.qr_code_2_rounded, color: Colors.white, size: 26),
@@ -313,7 +313,7 @@ class _Header extends StatelessWidget {
                     product != null
                         ? '${product!.name} • SKU: ${product!.sku}'
                         : l10n.qrAllItems(count),
-                    style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 11),
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 11),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -334,7 +334,7 @@ class _ModeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Material(
-        color: selected ? AppColors.primary.withOpacity(0.12) : AppColors.background,
+        color: selected ? AppColors.primary.withValues(alpha: 0.12) : AppColors.background,
         borderRadius: BorderRadius.circular(10),
         child: InkWell(
           onTap: onTap,
@@ -386,7 +386,7 @@ class _SingleQrView extends StatelessWidget {
               border: Border.all(color: AppColors.border),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
+                  color: Colors.black.withValues(alpha: 0.06),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),

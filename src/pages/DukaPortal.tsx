@@ -77,6 +77,7 @@ import { TermsOfServiceView } from '@/components/v1/TermsOfServiceView';
 import { AuthModalOrView } from '@/components/v1/AuthModalOrView';
 import { AccountSettingsView } from '@/components/v1/AccountSettingsView';
 import { DocumentsView } from '@/components/v1/DocumentsView';
+import { TransactionHistoryView } from '@/components/v1/TransactionHistoryView';
 import { PendingTransactionsView } from '@/components/v1/PendingTransactionsView';
 import {
   analyzeCompletionGaps,
@@ -140,7 +141,7 @@ const VENDOR_ROUTE_TABS = [
   'branches', 'branch-management', 'calendar', 'inventory', 'suppliers', 'reports',
   'analytics', 'bi-analytics', 'bi', 'product-geo-matrix', 'geo-analytics', 'matrix',
   'expenses-payroll', 'expenses', 'payroll', 'predictive', 'forecasting',
-  'admin-approvals', 'admin_approvals', 'profile', 'settings', 'documents', 'staff-site',
+  'admin-approvals', 'admin_approvals', 'profile', 'settings', 'documents', 'transaction-history', 'staff-site',
   'workplace-reception', 'workplace-kitchen', 'workplace-waiter', 'workplace-restaurant-live',
   'workplace-tables', 'workplace-appointments', 'workplace-prescriptions',
   'workplace-fractional', 'workplace-barcodes',
@@ -1585,6 +1586,10 @@ export default function DukaPortal() {
 
                 {activeTab === 'documents' && (
                   <DocumentsView language={language} />
+                )}
+
+                {activeTab === 'transaction-history' && (
+                  <TransactionHistoryView language={language} sales={sales} />
                 )}
 
                 {(activeTab === 'profile' || activeTab === 'settings') && (

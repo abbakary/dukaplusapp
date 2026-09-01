@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
 
 /// General empty / zero-data state.
@@ -35,7 +35,7 @@ class EmptyState extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: 20, color: primary.withOpacity(0.5)),
+                Icon(icon, size: 20, color: primary.withValues(alpha: 0.5)),
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
@@ -64,10 +64,10 @@ class EmptyState extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    color: primary.withOpacity(0.08),
+                    color: primary.withValues(alpha: 0.08),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(icon, size: 36, color: primary.withOpacity(0.55)),
+                  child: Icon(icon, size: 36, color: primary.withValues(alpha: 0.55)),
                 ),
                 const SizedBox(height: 16),
                 Text(

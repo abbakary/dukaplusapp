@@ -28,14 +28,17 @@ TenantDocumentConfig configFromApiDoc(
   );
 }
 
-Map<String, dynamic> configToApiDoc(TenantDocumentConfig config) => {
-      'activeTemplateIds': {
-        for (final e in config.activeTemplateIds.entries)
-          documentTypeToApiKey(e.key): e.value,
-      },
-      'branding': config.branding.toJson(),
-      'updatedAt': DateTime.now().toIso8601String(),
-    };
+Map<String, dynamic> configToApiDoc(TenantDocumentConfig config) {
+  final branding = config.branding.toJson()..remove('logoUrl');
+  return {
+    'activeTemplateIds': {
+      for (final e in config.activeTemplateIds.entries)
+        documentTypeToApiKey(e.key): e.value,
+    },
+    'branding': branding,
+    'updatedAt': DateTime.now().toIso8601String(),
+  };
+}
 
 class DocumentTemplateNotifier extends StateNotifier<TenantDocumentConfig> {
   DocumentTemplateNotifier(this._ref, this._tenantKey, String? businessName, this._api)
@@ -110,24 +113,18 @@ class DocumentTemplateNotifier extends StateNotifier<TenantDocumentConfig> {
   Future<String?> pickAndUploadLogo() async {
     final picked = await _picker.pickImage(
       source: ImageSource.gallery,
-      maxWidth: 800,
-      maxHeight: 800,
-      imageQuality: 85,
+      maxWidth: 420,
+      maxHeight: 420,
+      imageQuality: 80,
     );
     if (picked == null) return null;
 
     final bytes = await picked.readAsBytes();
     if (bytes.length > 512000) {
-      throw Exception('Logo must be 500 KB or smaller.');
+      throw Exception('Logo must be 500 KB or smaller. Try a smaller image.');
     }
 
-    final mime = picked.path.toLowerCase().endsWith('.png')
-        ? 'image/png'
-        : picked.path.toLowerCase().endsWith('.webp')
-            ? 'image/webp'
-            : picked.path.toLowerCase().endsWith('.gif')
-                ? 'image/gif'
-                : 'image/jpeg';
+    const mime = 'image/jpeg';
     final dataUrl = 'data:$mime;base64,${base64Encode(bytes)}';
 
     try {
@@ -137,10 +134,10 @@ class DocumentTemplateNotifier extends StateNotifier<TenantDocumentConfig> {
       final mapped = configFromApiDoc(doc, businessName: user?.businessName);
       state = mapped;
       await saveDocumentConfig(_tenantKey, mapped);
-    } catch (_) {
-      await patchBranding(logoUrl: dataUrl);
+      return dataUrl;
+    } catch (e) {
+      rethrow;
     }
-    return dataUrl;
   }
 
   Future<void> removeLogo() async {

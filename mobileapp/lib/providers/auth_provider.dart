@@ -193,7 +193,27 @@ class AuthNotifier extends StateNotifier<AuthState> {
   String _dioErrorMessage(DioException de) {
     final status = de.response?.statusCode;
     if (status == 401) return 'Invalid email or password';
-    if (status == 422) return 'Please check your details and try again';
+    if (status == 422) {
+      // Extract the first validation error message from FastAPI's response
+      try {
+        final body = de.response?.data;
+        if (body is Map && body['detail'] is List) {
+          final details = body['detail'] as List;
+          if (details.isNotEmpty) {
+            final first = details.first;
+            if (first is Map) {
+              final msg = first['msg']?.toString() ?? '';
+              final loc = (first['loc'] as List?)?.join('.') ?? '';
+              if (msg.isNotEmpty) return '$loc: $msg';
+            }
+          }
+        }
+        if (body is Map && body['detail'] is String) {
+          return body['detail'].toString();
+        }
+      } catch (_) {}
+      return 'Please check your details and try again';
+    }
     if (status == 409) return 'An account with this email already exists';
     if (de.type == DioExceptionType.connectionError ||
         de.type == DioExceptionType.connectionTimeout ||

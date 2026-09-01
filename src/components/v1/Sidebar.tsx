@@ -124,6 +124,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const canSeePredictive = isOwner || isManager || isStorekeeper || isPharmacist;
   const canSeeReports = isOwner || isManager || isAccountant;
   const canSeeDocuments = isOwner || isManager || isAccountant;
+  const canSeeTransactionHistory = isOwner || isManager || isAccountant || isCashier;
   const canSeeCalendar = isOwner || isManager || isPharmacist || isStorekeeper;
   const canSeeAccountSettings = isOwner;
 
@@ -240,9 +241,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const moreNav: NavItemDef[] = useMemo(
     () => [
       {
+        id: 'transaction-history',
+        labelEn: 'Sales & Documents',
+        labelSw: 'Mauzo & Hati',
+        icon: FileSignature,
+        activeWhen: v => v === 'transaction-history',
+        visible: canSeeTransactionHistory,
+      },
+      {
         id: 'documents',
-        labelEn: 'Documents',
-        labelSw: 'Hati',
+        labelEn: 'Doc Templates',
+        labelSw: 'Violezo vya Hati',
         icon: FileText,
         activeWhen: v => v === 'documents',
         visible: canSeeDocuments,

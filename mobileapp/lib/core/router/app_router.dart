@@ -23,6 +23,7 @@ import '../../screens/pending/pending_transactions_screen.dart';
 import '../../screens/legal/terms_of_service_screen.dart';
 import '../../providers/locale_provider.dart';
 import '../../widgets/app_brand_logo.dart';
+import '../../screens/transactions/transaction_history_screen.dart';
 import '../../screens/bi/bi_analytics_screen.dart';
 
 final _rootNavigatorKey  = GlobalKey<NavigatorState>();
@@ -80,6 +81,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/suppliers', builder: (_, __) => const SuppliersScreen()),
           GoRoute(path: '/credit',   builder: (_, __) => const ReceivablesPayablesScreen()),
           GoRoute(path: '/reports',   builder: (_, __) => const ReportsScreen()),
+          GoRoute(path: '/transactions', builder: (_, __) => const TransactionHistoryScreen()),
           GoRoute(path: '/documents', builder: (_, __) => const DocumentTemplatesScreen()),
           GoRoute(path: '/bi',        builder: (_, __) => const BiAnalyticsScreen()),
           GoRoute(path: '/branches',  builder: (_, __) => const BranchesScreen()),

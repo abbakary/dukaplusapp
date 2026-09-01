@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
@@ -663,92 +663,126 @@ class _CartBar extends ConsumerWidget {
     final totals = ref.watch(cartTotalsProvider);
     final l10n = ref.watch(appLocalizationsProvider);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
+        gradient: LinearGradient(
+          colors: [Colors.white, const Color(0xFFF4F6FB)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        boxShadow: const [
           BoxShadow(
-              color: Colors.black.withAlpha(20),
-              blurRadius: 10,
-              offset: const Offset(0, -3))
+            color: Color(0x1A000000),
+            blurRadius: 12,
+            offset: Offset(0, -3),
+          ),
         ],
       ),
       child: SafeArea(
         top: false,
-        child: Row(
-          children: [
-            // Cart icon + count
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: primary.withAlpha(20),
-                borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+          child: Row(
+            children: [
+              // Cart summary pill
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: primary.withValues(alpha: 0.20)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(Icons.shopping_cart_rounded, color: primary, size: 20),
+                        Positioned(
+                          right: -5, top: -5,
+                          child: Container(
+                            width: 14, height: 14,
+                            decoration: BoxDecoration(color: primary, shape: BoxShape.circle),
+                            child: Text('${cart.itemCount}',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.white, fontSize: 8, fontWeight: FontWeight.w800)),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(l10n.itemCount(cart.itemCount),
+                          style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                        Text(AppFormatters.tsh(totals.total),
+                          style: TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w800, color: primary)),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Icon(Icons.shopping_cart_rounded, color: primary, size: 20),
-                  Positioned(
-                    right: -4, top: -4,
-                    child: Container(
-                      width: 14, height: 14,
-                      decoration: BoxDecoration(
-                          color: primary, shape: BoxShape.circle),
-                      child: Text('${cart.itemCount}',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
+              const SizedBox(width: 10),
+              // View cart
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => _openCart(context),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    side: BorderSide(color: primary, width: 1.5),
+                    foregroundColor: primary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text(l10n.view,
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: primary)),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Pay — gradient
+              Expanded(
+                flex: 2,
+                child: Container(
+                  height: 44,
+                  decoration: BoxDecoration(
+                    gradient: AppColors.gradientForBusiness(
+                        ref.read(businessTypeProvider)),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: primary.withValues(alpha: 0.30),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => _openPaymentSheet(context),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.payment_rounded, color: Colors.white, size: 17),
+                          const SizedBox(width: 5),
+                          Text(l10n.pay,
+                            style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 8,
-                              fontWeight: FontWeight.w800)),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            )),
+                        ],
+                      ),
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
-            const SizedBox(width: 10),
-            // Totals
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    l10n.itemCount(cart.itemCount),
-                    style: const TextStyle(
-                        fontSize: 10, color: AppColors.textSecondary),
-                  ),
-                  Text(AppFormatters.tsh(totals.total),
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: primary)),
-                ],
-              ),
-            ),
-            // View + Pay buttons
-            OutlinedButton(
-              onPressed: () => _openCart(context),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                side: BorderSide(color: primary),
-              ),
-              child:
-                  Text(l10n.view, style: TextStyle(fontSize: 12, color: primary)),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton(
-              onPressed: () => _openPaymentSheet(context),
-              style: ElevatedButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Text(l10n.pay, style: const TextStyle(fontSize: 12)),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -764,182 +798,338 @@ class _CartBar extends ConsumerWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Cart Sheet — fixed height, no overflow
+// Cart Sheet — polished POS checkout view
 // ─────────────────────────────────────────────────────────────────────────────
 class _CartSheet extends ConsumerWidget {
   const _CartSheet();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = ref.watch(appLocalizationsProvider);
-    final cart    = ref.watch(cartProvider);
-    final totals  = ref.watch(cartTotalsProvider);
+    final l10n     = ref.watch(appLocalizationsProvider);
+    final cart     = ref.watch(cartProvider);
+    final totals   = ref.watch(cartTotalsProvider);
     final settings = ref.watch(businessSettingsProvider);
-    final primary = Theme.of(context).colorScheme.primary;
-    final mq      = MediaQuery.of(context);
-    final compact = mq.size.height < 560;
-    final sheetH  = (mq.size.height * (compact ? 0.88 : 0.72))
-        .clamp(280.0, mq.size.height * 0.92);
+    final primary  = Theme.of(context).colorScheme.primary;
+    final bizType  = ref.watch(businessTypeProvider);
+    final gradient = AppColors.gradientForBusiness(bizType);
+    final mq       = MediaQuery.of(context);
+    final compact  = mq.size.height < 600;
+    final sheetH   = (mq.size.height * (compact ? 0.92 : 0.80))
+        .clamp(320.0, mq.size.height * 0.94);
 
     return Container(
       height: sheetH,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4F6FB),   // soft blue-grey background
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         children: [
-          // ── Handle ────────────────────────────────────────
-          const _Handle(),
-          // ── Header ────────────────────────────────────────
-          Padding(
-            padding: EdgeInsets.fromLTRB(18, compact ? 6 : 10, 18, compact ? 4 : 6),
-            child: Row(
-              children: [
-                Text(l10n.orderSummary,
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w700)),
-                const Spacer(),
-                if (!cart.isEmpty)
-                  GestureDetector(
-                    onTap: () => ref.read(cartProvider.notifier).clear(),
-                    child: Text(l10n.clearAll,
-                        style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.danger,
-                            fontWeight: FontWeight.w600)),
+          // ── Gradient header ──────────────────────────────────
+          Container(
+            decoration: BoxDecoration(
+              gradient: gradient,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Column(
+                children: [
+                  // Drag handle
+                  const SizedBox(height: 10),
+                  Center(
+                    child: Container(
+                      width: 36, height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                   ),
-              ],
+                  const SizedBox(height: 10),
+                  // Title row
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.receipt_long_rounded,
+                              color: Colors.white, size: 20),
+                        ),
+                        const SizedBox(width: 10),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(l10n.orderSummary,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.3,
+                              )),
+                            Text(
+                              l10n.itemCount(cart.itemCount),
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.80),
+                                fontSize: 11,
+                              )),
+                          ],
+                        ),
+                        const Spacer(),
+                        // Total amount badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.20),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                          ),
+                          child: Text(
+                            AppFormatters.tsh(totals.total),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.3,
+                            )),
+                        ),
+                        if (!cart.isEmpty) ...[
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () => ref.read(cartProvider.notifier).clear(),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: AppColors.danger.withValues(alpha: 0.22),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: AppColors.danger.withValues(alpha: 0.4)),
+                              ),
+                              child: Text(l10n.clearAll,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                )),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          const Divider(height: 1),
 
-          // ── Items list ────────────────────────────────────
+          // ── Items list ────────────────────────────────────────
           Expanded(
             child: cart.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.shopping_cart_outlined,
-                            size: 44, color: AppColors.textHint),
-                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: AppColors.border,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.shopping_cart_outlined,
+                              size: 40, color: AppColors.textHint),
+                        ),
+                        const SizedBox(height: 14),
                         Text(l10n.cartEmpty,
-                            style: const TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 14)),
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          )),
                       ],
                     ),
                   )
                 : ListView.separated(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
                     itemCount: cart.items.length,
-                    separatorBuilder: (_, __) =>
-                        const Divider(height: 1, indent: 16, endIndent: 16),
-                    itemBuilder: (_, i) =>
-                        _CartItemRow(item: cart.items[i]),
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (_, i) => _CartItemRow(item: cart.items[i]),
                   ),
           ),
 
+          // ── Totals + action buttons ───────────────────────────
           if (!cart.isEmpty)
             Flexible(
               fit: FlexFit.loose,
-              child: SingleChildScrollView(
-                padding: EdgeInsets.zero,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Divider(height: 1),
-                    // ── Totals ─────────────────────────────────────
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(18, compact ? 8 : 10, 18, compact ? 4 : 6),
-                      child: Column(
-                        children: [
-                          if (settings.discountEnabled &&
-                              settings.showDiscountOnReceipts &&
-                              totals.discountAmount > 0) ...[
-                            _TRow(l10n.grossSubtotal, AppFormatters.tsh(totals.grossSubtotal)),
-                            _TRow(l10n.discount, '- ${AppFormatters.tsh(totals.discountAmount)}',
-                                valueColor: AppColors.warning),
-                          ],
-                          _TRow(l10n.subtotal, AppFormatters.tsh(totals.subtotal)),
-                          const SizedBox(height: 3),
-                          _TRow(l10n.vat18, AppFormatters.tsh(totals.vatAmount)),
-                          Padding(
-                            padding: EdgeInsets.symmetric(vertical: compact ? 4 : 6),
-                            child: const Divider(height: 1),
-                          ),
-                          _TRow(
-                            l10n.total,
-                            AppFormatters.tsh(totals.total),
-                            bold: true,
-                            valueColor: primary,
-                            fontSize: compact ? 14 : 15,
-                          ),
-                        ],
-                      ),
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x14000000),
+                      blurRadius: 16,
+                      offset: Offset(0, -4),
                     ),
-                    // ── Actions ────────────────────────────────────
-                    SafeArea(
-                      top: false,
-                      child: Padding(
-                        padding: EdgeInsets.fromLTRB(16, 0, 16, compact ? 8 : 12),
+                  ],
+                ),
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Totals section
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(18, compact ? 10 : 14, 18, compact ? 6 : 8),
                         child: Column(
-                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton.icon(
-                                    onPressed: () => _showCustomerPicker(context, ref),
-                                    style: OutlinedButton.styleFrom(
-                                      padding: EdgeInsets.symmetric(vertical: compact ? 8 : 10),
-                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                    ),
-                                    icon: Icon(Icons.person_add_outlined, size: compact ? 14 : 16),
-                                    label: Text(
-                                      cart.hasCustomer
-                                          ? cart.customerName!
-                                          : l10n.genericCustomer,
-                                      style: TextStyle(fontSize: compact ? 11 : 12),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  flex: 2,
-                                  child: ElevatedButton.icon(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                      _openPaymentSheet(context);
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      padding: EdgeInsets.symmetric(vertical: compact ? 8 : 10),
-                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                    ),
-                                    icon: Icon(Icons.payment_rounded, size: compact ? 14 : 16),
-                                    label: Text(l10n.payNow,
-                                        style: TextStyle(fontSize: compact ? 11 : 12)),
-                                  ),
-                                ),
-                              ],
+                            if (settings.discountEnabled &&
+                                settings.showDiscountOnReceipts &&
+                                totals.discountAmount > 0) ...[
+                              _TRow(l10n.grossSubtotal, AppFormatters.tsh(totals.grossSubtotal)),
+                              _TRow(l10n.discount, '- ${AppFormatters.tsh(totals.discountAmount)}',
+                                  valueColor: AppColors.warning),
+                            ],
+                            _TRow(l10n.subtotal, AppFormatters.tsh(totals.subtotal)),
+                            const SizedBox(height: 4),
+                            _TRow(l10n.vat18, AppFormatters.tsh(totals.vatAmount)),
+                            Padding(
+                              padding: EdgeInsets.symmetric(vertical: compact ? 6 : 8),
+                              child: const Divider(height: 1, thickness: 1.5),
                             ),
-                            SizedBox(height: compact ? 6 : 8),
-                            SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton.icon(
-                                onPressed: () => _saveAndNext(context, ref),
-                                icon: Icon(Icons.save_outlined, size: compact ? 14 : 16),
-                                label: Text(l10n.saveAndNext,
-                                    style: TextStyle(fontSize: compact ? 11 : 12)),
-                              ),
+                            // Bold total row
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(l10n.total,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary,
+                                  )),
+                                Text(AppFormatters.tsh(totals.total),
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                    color: primary,
+                                    letterSpacing: -0.5,
+                                  )),
+                              ],
                             ),
                           ],
                         ),
                       ),
-                    ),
-                  ],
+                      // Action buttons
+                      SafeArea(
+                        top: false,
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(14, 0, 14, compact ? 10 : 14),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Row: Customer picker + Pay Now
+                              Row(
+                                children: [
+                                  // Customer button
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      onPressed: () => _showCustomerPicker(context, ref),
+                                      style: OutlinedButton.styleFrom(
+                                        padding: EdgeInsets.symmetric(vertical: compact ? 10 : 12),
+                                        side: BorderSide(color: primary.withValues(alpha: 0.50), width: 1.5),
+                                        foregroundColor: primary,
+                                        backgroundColor: primary.withValues(alpha: 0.04),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                      ),
+                                      icon: Icon(Icons.person_add_outlined,
+                                          size: 17, color: primary),
+                                      label: Text(
+                                        cart.hasCustomer
+                                            ? cart.customerName!
+                                            : l10n.genericCustomer,
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: primary),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  // Pay Now — prominent gradient button
+                                  Expanded(
+                                    flex: 2,
+                                    child: Container(
+                                      height: 48,
+                                      decoration: BoxDecoration(
+                                        gradient: gradient,
+                                        borderRadius: BorderRadius.circular(14),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: primary.withValues(alpha: 0.35),
+                                            blurRadius: 10,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        child: InkWell(
+                                          borderRadius: BorderRadius.circular(14),
+                                          onTap: () {
+                                            Navigator.pop(context);
+                                            _openPaymentSheet(context);
+                                          },
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              const Icon(Icons.payment_rounded,
+                                                  color: Colors.white, size: 18),
+                                              const SizedBox(width: 6),
+                                              Text(l10n.payNow,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w700,
+                                                  letterSpacing: 0.1,
+                                                )),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: compact ? 8 : 10),
+                              // Save & Next — full width outlined
+                              SizedBox(
+                                width: double.infinity,
+                                height: 44,
+                                child: OutlinedButton.icon(
+                                  onPressed: () => _saveAndNext(context, ref),
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(color: AppColors.border, width: 1.5),
+                                    foregroundColor: AppColors.textSecondary,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                  ),
+                                  icon: const Icon(Icons.save_outlined, size: 16),
+                                  label: Text(l10n.saveAndNext,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    )),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -950,7 +1140,7 @@ class _CartSheet extends ConsumerWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Cart Item Row
+// Cart Item Row — card-style per item
 // ─────────────────────────────────────────────────────────────────────────────
 class _CartItemRow extends ConsumerWidget {
   final CartItem item;
@@ -963,99 +1153,168 @@ class _CartItemRow extends ConsumerWidget {
     final primary  = Theme.of(context).colorScheme.primary;
     final l10n     = ref.watch(appLocalizationsProvider);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border, width: 1),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
       child: Column(
         children: [
           Row(
             children: [
-          // Icon
-          Container(
-            width: 36, height: 36,
-            decoration: BoxDecoration(
-              color: primary.withAlpha(22),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(Icons.inventory_2_outlined, color: primary, size: 18),
-          ),
-          const SizedBox(width: 10),
-          // Name + price
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(item.product.name,
-                    style: const TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w600),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
-                Text(AppFormatters.tsh(item.product.price),
-                    style:
-                        TextStyle(fontSize: 11, color: primary)),
-              ],
-            ),
-          ),
-          // Qty controls
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _QBtn(
-                icon: Icons.remove_rounded,
-                color: AppColors.danger,
-                onTap: () => notifier.updateQty(
-                    item.product.id, item.quantity - 1),
+              // Product icon
+              Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(
+                  color: primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.inventory_2_outlined, color: primary, size: 20),
               ),
-              SizedBox(
-                width: 30,
-                child: Text('${item.quantity.toInt()}',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w700)),
-              ),
-              _QBtn(
-                icon: Icons.add_rounded,
-                color: AppColors.success,
-                onTap: () => notifier.updateQty(
-                    item.product.id, item.quantity + 1),
-              ),
-            ],
-          ),
-          const SizedBox(width: 8),
-          // Line total
-          SizedBox(
-            width: 68,
-            child: Text(
-                AppFormatters.tsh(settings.discountEnabled ? item.lineTotal : item.originalTotal),
-                textAlign: TextAlign.right,
-                style: const TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.w700)),
-          ),
-            ],
-          ),
-          if (settings.discountEnabled) ...[
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Text(l10n.discountPercent,
-                    style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
-                const Spacer(),
-                Wrap(
-                  spacing: 4,
+              const SizedBox(width: 10),
+              // Name + unit price
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    for (final pct in ([0, 5, 10, settings.maxDiscountPercent.round()]
-                          ..sort()))
-                      ChoiceChip(
-                        label: Text('$pct%', style: const TextStyle(fontSize: 10)),
-                        selected: item.discountPercent.round() == pct,
-                        onSelected: (_) => notifier.updateDiscount(
-                          item.product.id,
-                          settings.capDiscount(pct.toDouble()),
-                        ),
-                        visualDensity: VisualDensity.compact,
+                    Text(item.product.name,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                    Text(AppFormatters.tsh(item.product.price),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: primary,
+                        fontWeight: FontWeight.w500,
+                      )),
                   ],
                 ),
-              ],
+              ),
+              // Qty controls
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF4F6FB),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _QBtn(
+                      icon: Icons.remove_rounded,
+                      color: AppColors.danger,
+                      onTap: () => notifier.updateQty(
+                          item.product.id, item.quantity - 1),
+                    ),
+                    SizedBox(
+                      width: 32,
+                      child: Text('${item.quantity.toInt()}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                        )),
+                    ),
+                    _QBtn(
+                      icon: Icons.add_rounded,
+                      color: AppColors.success,
+                      onTap: () => notifier.updateQty(
+                          item.product.id, item.quantity + 1),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              // Line total
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    AppFormatters.tsh(settings.discountEnabled
+                        ? item.lineTotal
+                        : item.originalTotal),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: primary,
+                    )),
+                ],
+              ),
+            ],
+          ),
+          // Discount chips
+          if (settings.discountEnabled) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF4F6FB),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  Text(l10n.discountPercent,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    )),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        for (final pct in ([0, 5, 10, settings.maxDiscountPercent.round()]
+                              ..sort()))
+                          GestureDetector(
+                            onTap: () => notifier.updateDiscount(
+                              item.product.id,
+                              settings.capDiscount(pct.toDouble()),
+                            ),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 140),
+                              margin: const EdgeInsets.only(left: 5),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: item.discountPercent.round() == pct
+                                    ? primary
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: item.discountPercent.round() == pct
+                                      ? primary
+                                      : AppColors.border,
+                                ),
+                              ),
+                              child: Text('$pct%',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: item.discountPercent.round() == pct
+                                      ? Colors.white
+                                      : AppColors.textSecondary,
+                                )),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ],
@@ -1068,52 +1327,47 @@ class _QBtn extends StatelessWidget {
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
-  const _QBtn(
-      {required this.icon, required this.color, required this.onTap});
+  const _QBtn({required this.icon, required this.color, required this.onTap});
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: 26, height: 26,
-          decoration: BoxDecoration(
-            color: color.withAlpha(22),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Icon(icon, color: color, size: 14),
-        ),
-      );
+    onTap: onTap,
+    child: Container(
+      width: 32, height: 32,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(icon, color: color, size: 16),
+    ),
+  );
 }
 
 class _TRow extends StatelessWidget {
   final String label;
   final String value;
-  final bool bold;
   final Color? valueColor;
-  final double fontSize;
 
-  const _TRow(this.label, this.value,
-      {this.bold = false, this.valueColor, this.fontSize = 13});
+  const _TRow(this.label, this.value, {this.valueColor});
 
   @override
-  Widget build(BuildContext context) => Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label,
-              style: TextStyle(
-                  fontSize: fontSize,
-                  color: bold
-                      ? AppColors.textPrimary
-                      : AppColors.textSecondary,
-                  fontWeight:
-                      bold ? FontWeight.w700 : FontWeight.w400)),
-          Text(value,
-              style: TextStyle(
-                  fontSize: fontSize,
-                  fontWeight:
-                      bold ? FontWeight.w800 : FontWeight.w500,
-                  color: valueColor ?? AppColors.textPrimary)),
-        ],
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w400)),
+            Text(value,
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: valueColor ?? AppColors.textPrimary)),
+          ],
+        ),
       );
 }
 
@@ -1210,8 +1464,7 @@ class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = ref.watch(appLocalizationsProvider);
-    final cart    = ref.watch(cartProvider);
+    final l10n    = ref.watch(appLocalizationsProvider);
     final totals  = ref.watch(cartTotalsProvider);
     final primary = Theme.of(context).colorScheme.primary;
     final mq      = MediaQuery.of(context);
@@ -1598,7 +1851,7 @@ class _CustomerPickerSheet extends ConsumerWidget {
                     final c = customers[i];
                     return ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: primary.withOpacity(0.12),
+                        backgroundColor: primary.withValues(alpha: 0.12),
                         child: Text(c.name.substring(0, 1).toUpperCase(),
                             style: TextStyle(color: primary, fontWeight: FontWeight.w700)),
                       ),

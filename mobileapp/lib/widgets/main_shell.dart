@@ -95,19 +95,19 @@ class _BottomNav extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        border: const Border(top: BorderSide(color: Color(0xFFEEF2F7), width: 1)),
+        border: const Border(top: BorderSide(color: Color(0xFFDDE3EC), width: 1)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: 16,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 60,
+          height: 64,   // taller than 60 — fits icons + labels on real devices
           child: Row(
             children: List.generate(tabs.length, (i) {
               final tab      = tabs[i];
@@ -196,11 +196,11 @@ class _NavItemState extends State<_NavItem>
             AnimatedContainer(
               duration:    const Duration(milliseconds: 200),
               curve:       Curves.easeOutCubic,
-              width:       selected ? 46 : 34,
-              height:      28,
+              width:       selected ? 52 : 40,
+              height:      32,
               decoration:  BoxDecoration(
-                color:         selected ? widget.primary.withOpacity(0.12) : Colors.transparent,
-                borderRadius:  BorderRadius.circular(14),
+                color:         selected ? widget.primary.withValues(alpha: 0.14) : Colors.transparent,
+                borderRadius:  BorderRadius.circular(16),
               ),
               child: Stack(
                 alignment: Alignment.center,
@@ -214,7 +214,7 @@ class _NavItemState extends State<_NavItem>
                       selected ? widget.tab.activeIcon : widget.tab.icon,
                       key:   ValueKey(selected),
                       color: color,
-                      size:  22,
+                      size:  24,   // larger icon for real devices
                     ),
                   ),
                   // Cart badge
@@ -247,7 +247,7 @@ class _NavItemState extends State<_NavItem>
             AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 200),
               style: TextStyle(
-                fontSize:   10,
+                fontSize:   11,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                 color:      color,
                 letterSpacing: selected ? 0.1 : 0,
@@ -309,7 +309,7 @@ class _AppDrawer extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(20, topPad + 20, 20, 24),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [primary.withOpacity(0.95), primary.withOpacity(0.80)],
+                colors: [primary.withValues(alpha: 0.97), primary.withValues(alpha: 0.82)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -322,8 +322,8 @@ class _AppDrawer extends StatelessWidget {
                   width: 54, height: 54,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.2),
-                    border: Border.all(color: Colors.white.withOpacity(0.4), width: 2),
+                    color: Colors.white.withValues(alpha: 0.20),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.40), width: 2),
                   ),
                   child: Center(
                     child: Text(initial,
@@ -338,16 +338,16 @@ class _AppDrawer extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(user?.businessName ?? '',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.80), fontSize: 12)),
+                    color: Colors.white.withValues(alpha: 0.82), fontSize: 12)),
                 const SizedBox(height: 10),
                 Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.18),
+                        color: Colors.white.withValues(alpha: 0.18),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white.withOpacity(0.3)),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.30)),
                       ),
                       child: Text(_roleLabel(),
                         style: const TextStyle(
@@ -359,7 +359,7 @@ class _AppDrawer extends StatelessWidget {
                         child: Text(user!.email!,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.65), fontSize: 11)),
+                            color: Colors.white.withValues(alpha: 0.68), fontSize: 11)),
                       ),
                   ],
                 ),
@@ -407,7 +407,7 @@ class _AppDrawer extends StatelessWidget {
             leading: Container(
               width: 36, height: 36,
               decoration: BoxDecoration(
-                color: AppColors.danger.withOpacity(0.08),
+                color: AppColors.danger.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.logout_rounded, color: AppColors.danger, size: 18),
@@ -458,7 +458,7 @@ class _DrawerItem extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: selected ? selectedColor.withOpacity(0.08) : Colors.transparent,
+              color: selected ? selectedColor.withValues(alpha: 0.10) : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -467,7 +467,7 @@ class _DrawerItem extends StatelessWidget {
                   width: 36, height: 36,
                   decoration: BoxDecoration(
                     color: selected
-                        ? selectedColor.withOpacity(0.12)
+                        ? selectedColor.withValues(alpha: 0.14)
                         : AppColors.surfaceVariant,
                     borderRadius: BorderRadius.circular(10),
                   ),

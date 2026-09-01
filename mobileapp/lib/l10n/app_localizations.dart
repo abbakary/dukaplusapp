@@ -90,6 +90,7 @@ class AppLocalizations {
       'suppliers': 'Suppliers', 'expenses': 'Expenses', 'branches': 'Branches',
       'settings': 'Settings', 'credit': 'Credit', 'myStipend': 'My Stipend',
       'documents': 'Documents',
+      'transactions': 'Sales & Docs',
     };
     const sw = {
       'home': 'Nyumbani', 'pos': 'POS', 'stock': 'Stoo', 'clients': 'Wateja',
@@ -97,6 +98,7 @@ class AppLocalizations {
       'suppliers': 'Wasambazaji', 'expenses': 'Matumizi', 'branches': 'Matawi',
       'settings': 'Mipangilio', 'credit': 'Mikopo', 'myStipend': 'Posho Yangu',
       'documents': 'Hati',
+      'transactions': 'Mauzo & Hati',
     };
     return isSw ? (sw[key] ?? key) : (en[key] ?? key);
   }

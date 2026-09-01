@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+﻿import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -9,7 +9,7 @@ import '../../data/models/user_model.dart';
 import 'formatters.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Helper — PdfColor doesn't have .withOpacity(); use this instead.
+// Helper — PdfColor doesn't have .withValues(alpha: ); use this instead.
 // alpha is 0.0–1.0
 // ─────────────────────────────────────────────────────────────────────────────
 PdfColor _alpha(PdfColor c, double alpha) =>

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -32,7 +32,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   void dispose() {
-    for (final c in [_nameCtrl,_bizCtrl,_emailCtrl,_phoneCtrl,_passCtrl,_tinCtrl]) c.dispose();
+    for (final c in [_nameCtrl,_bizCtrl,_emailCtrl,_phoneCtrl,_passCtrl,_tinCtrl]) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -50,13 +52,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
     try {
       await ref.read(authProvider.notifier).register({
-        'name':          _nameCtrl.text.trim(),
+        'owner_name':    _nameCtrl.text.trim(),
         'business_name': _bizCtrl.text.trim(),
         'email':         _emailCtrl.text.trim(),
         'phone':         _phoneCtrl.text.trim(),
         'password':      _passCtrl.text,
         'business_type': _selectedType,
         'tin_number':    _tinCtrl.text.trim(),
+        'region':        'Dar es Salaam',
+        'plan_tier':     'free_starter',
       });
     } catch (_) {
       if (mounted) {
@@ -90,7 +94,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     const Spacer(),
                     Text(l10n.stepOfTotal(_step + 1, 3),
-                      style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)),
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
                   ],
                 ),
               ),
@@ -102,7 +106,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       height: 4,
                       margin: EdgeInsets.only(right: i < 2 ? 6 : 0),
                       decoration: BoxDecoration(
-                        color: i <= _step ? Colors.white : Colors.white.withOpacity(0.3),
+                        color: i <= _step ? Colors.white : Colors.white.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -115,7 +119,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 30, offset: const Offset(0, 10))],
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 30, offset: const Offset(0, 10))],
                   ),
                   child: Form(
                     key: _formKey,
@@ -166,7 +170,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
-                  color: selected ? color.withOpacity(0.1) : AppColors.surfaceVariant,
+                  color: selected ? color.withValues(alpha: 0.1) : AppColors.surfaceVariant,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: selected ? color : AppColors.border,

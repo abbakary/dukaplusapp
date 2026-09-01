@@ -67,7 +67,7 @@ class GradientAppBar extends ConsumerWidget implements PreferredSizeWidget {
                     if (subtitle != null)
                       Text(subtitle!,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withValues(alpha: 0.82),
                           fontSize: 12, fontWeight: FontWeight.w400,
                         )),
                   ],

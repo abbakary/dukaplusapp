@@ -19,10 +19,12 @@ void main() async {
 
   // ── Transparent status bar with light icons ────────────────────────────
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor:            Colors.transparent,
-    statusBarIconBrightness:   Brightness.light,
-    systemNavigationBarColor:  Colors.white,
+    statusBarColor:                    Colors.transparent,
+    statusBarIconBrightness:           Brightness.light,
+    statusBarBrightness:               Brightness.dark, // iOS
+    systemNavigationBarColor:          Colors.white,
     systemNavigationBarIconBrightness: Brightness.dark,
+    systemNavigationBarDividerColor:   Colors.transparent,
   ));
 
   // ── Ensure system navigation bar is drawn edge-to-edge ────────────────

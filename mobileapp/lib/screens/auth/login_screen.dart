@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/config/demo_accounts.dart';
@@ -100,7 +100,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 dense: true,
                 leading: CircleAvatar(
                   radius: 18,
-                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                   child: Text(d.label[0],
                     style: const TextStyle(
                       fontSize: 13, fontWeight: FontWeight.w700,
@@ -178,7 +178,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                     color: Colors.white,
                                     borderRadius: BorderRadius.circular(isCompact ? 16 : 22),
                                     boxShadow: [BoxShadow(
-                                      color: Colors.black.withOpacity(0.18),
+                                      color: Colors.black.withValues(alpha: 0.18),
                                       blurRadius: 20, offset: const Offset(0, 6))],
                                   ),
                                   child: Center(child: Text('D+',
@@ -200,7 +200,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 const SizedBox(height: 2),
                                 Text(l10n.posTagline,
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.70),
+                                    color: Colors.white.withValues(alpha: 0.70),
                                     fontSize: isCompact ? 11 : 12,
                                   )),
                               ],
@@ -212,7 +212,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(24),
                               boxShadow: [BoxShadow(
-                                color: Colors.black.withOpacity(0.10),
+                                color: Colors.black.withValues(alpha: 0.10),
                                 blurRadius: 32, offset: const Offset(0, 12))],
                             ),
                             padding: EdgeInsets.all(isCompact ? 16 : 24),
@@ -309,7 +309,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: AppColors.primary,
                                         disabledBackgroundColor:
-                                          AppColors.primary.withOpacity(0.6),
+                                          AppColors.primary.withValues(alpha: 0.6),
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(14)),
                                       ),
@@ -334,7 +334,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               children: [
                                 Text(l10n.noAccount,
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.80),
+                                    color: Colors.white.withValues(alpha: 0.80),
                                     fontSize: 13)),
                                 GestureDetector(
                                   onTap: () => context.go('/register'),
@@ -386,9 +386,9 @@ class _BackBtn extends ConsumerWidget {
     child: Container(
       width: 38, height: 38,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
+        color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.25)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
       ),
       child: const Icon(
         Icons.arrow_back_rounded, color: Colors.white, size: 20),
@@ -406,9 +406,9 @@ class _LangToggle extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
+          color: Colors.white.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.25)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

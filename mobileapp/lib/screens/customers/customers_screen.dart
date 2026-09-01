@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -110,9 +110,9 @@ class _SummaryChip extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(vertical: 10),
     decoration: BoxDecoration(
-      color: color.withOpacity(0.08),
+      color: color.withValues(alpha: 0.08),
       borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: color.withOpacity(0.2)),
+      border: Border.all(color: color.withValues(alpha: 0.2)),
     ),
     child: Column(
       children: [
@@ -152,11 +152,11 @@ class _CustomerTile extends ConsumerWidget {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: customer.isOverdue
-                  ? AppColors.danger.withOpacity(0.3)
+                  ? AppColors.danger.withValues(alpha: 0.3)
                   : AppColors.border,
             ),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 6),
             ],
           ),
           child: Padding(
@@ -166,7 +166,7 @@ class _CustomerTile extends ConsumerWidget {
               children: [
                 CircleAvatar(
                   radius: 22,
-                  backgroundColor: primary.withOpacity(0.15),
+                  backgroundColor: primary.withValues(alpha: 0.15),
                   child: Text(
                     customer.initials,
                     style: TextStyle(
@@ -307,7 +307,7 @@ class _CustomerDetailSheet extends ConsumerWidget {
                 children: [
                   CircleAvatar(
                     radius: 28,
-                    backgroundColor: primary.withOpacity(0.15),
+                    backgroundColor: primary.withValues(alpha: 0.15),
                     child: Text(customer.initials,
                       style: TextStyle(color: primary, fontWeight: FontWeight.w700, fontSize: 20)),
                   ),

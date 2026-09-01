@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../core/theme/app_colors.dart';
@@ -313,7 +313,7 @@ class _BarChartWidget extends StatelessWidget {
             barRods: [BarChartRodData(
               toY: e.value.revenue,
               gradient: LinearGradient(
-                colors: [color.withOpacity(0.6), color],
+                colors: [color.withValues(alpha: 0.6), color],
                 begin: Alignment.bottomCenter, end: Alignment.topCenter,
               ),
               width: 20, borderRadius: BorderRadius.circular(4),
@@ -447,7 +447,7 @@ class _TopProductsChart extends StatelessWidget {
                     value: pct, minHeight: 6,
                     backgroundColor: AppColors.divider,
                     valueColor: AlwaysStoppedAnimation(
-                      color.withOpacity(0.6 + 0.4 * (1 - e.key / products.length)),
+                      color.withValues(alpha: 0.6 + 0.4 * (1 - e.key / products.length)),
                     ),
                   ),
                 ),

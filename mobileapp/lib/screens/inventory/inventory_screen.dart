@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -234,19 +234,19 @@ class _ProductTile extends ConsumerWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.border),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 6, offset: const Offset(0, 2))],
       ),
       clipBehavior: Clip.antiAlias,
       child: Material(
         color: Colors.white,
         child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        splashColor: primary.withOpacity(0.08),
-        hoverColor: primary.withOpacity(0.04),
+        splashColor: primary.withValues(alpha: 0.08),
+        hoverColor: primary.withValues(alpha: 0.04),
         leading: Container(
           width: 46, height: 46,
           decoration: BoxDecoration(
-            color: primary.withOpacity(0.1),
+            color: primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(Icons.inventory_2_outlined, color: primary, size: 22),
@@ -299,7 +299,7 @@ class _ProductTile extends ConsumerWidget {
               ],
             ),
             IconButton(
-              icon: Icon(Icons.qr_code_rounded, size: 20, color: primary.withOpacity(0.8)),
+              icon: Icon(Icons.qr_code_rounded, size: 20, color: primary.withValues(alpha: 0.8)),
               onPressed: () => showProductQrSheet(context, product: product),
               tooltip: l10n.showQr,
             ),
@@ -481,7 +481,7 @@ class _ProductDetailSheet extends ConsumerWidget {
                 children: [
                   Container(
                     width: 56, height: 56,
-                    decoration: BoxDecoration(color: primary.withOpacity(0.1), borderRadius: BorderRadius.circular(14)),
+                    decoration: BoxDecoration(color: primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(14)),
                     child: Icon(Icons.inventory_2_outlined, color: primary, size: 28),
                   ),
                   const SizedBox(width: 14),
@@ -772,7 +772,7 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: primary.withOpacity(0.1),
+                        color: primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(Icons.add_box_outlined, color: primary),

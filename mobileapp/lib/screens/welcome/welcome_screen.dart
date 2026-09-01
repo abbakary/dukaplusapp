@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -173,7 +173,7 @@ class _HeroSection extends StatelessWidget {
             width: screenW * 0.65, height: screenW * 0.65,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white.withOpacity(0.04),
+              color: Colors.white.withValues(alpha: 0.04),
             ),
           ),
         ),
@@ -184,7 +184,7 @@ class _HeroSection extends StatelessWidget {
             width: screenW * 0.45, height: screenW * 0.45,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: _teal.withOpacity(0.08),
+              color: _teal.withValues(alpha: 0.08),
             ),
           ),
         ),
@@ -221,9 +221,9 @@ class _HeroSection extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                     decoration: BoxDecoration(
-                      color: _teal.withOpacity(0.2),
+                      color: _teal.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: _teal.withOpacity(0.5)),
+                      border: Border.all(color: _teal.withValues(alpha: 0.5)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -255,7 +255,7 @@ class _HeroSection extends StatelessWidget {
                   Text(l10n.welcomeSubtitle,
                     style: TextStyle(
                       fontSize: isCompact ? 12 : 13,
-                      color: Colors.white.withOpacity(0.78),
+                      color: Colors.white.withValues(alpha: 0.78),
                       height: 1.45,
                     )),
                   SizedBox(height: vGap),
@@ -276,7 +276,7 @@ class _HeroSection extends StatelessWidget {
                             )),
                           Text(s['label']!,
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.65),
+                              color: Colors.white.withValues(alpha: 0.65),
                               fontSize: 10.5,
                             )),
                         ],
@@ -407,9 +407,9 @@ class _LangButton extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.12),
+          color: Colors.white.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.2)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -529,16 +529,16 @@ class _FeatureHighlight extends StatelessWidget {
       padding: EdgeInsets.symmetric(
         horizontal: 14, vertical: compact ? 8 : 11),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.10),
+        color: Colors.white.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.15)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
       ),
       child: Row(
         children: [
           Container(
             width: 36, height: 36,
             decoration: BoxDecoration(
-              color: feature.color.withOpacity(0.25),
+              color: feature.color.withValues(alpha: 0.25),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(feature.icon, color: Colors.white, size: 18),
@@ -559,7 +559,7 @@ class _FeatureHighlight extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.70),
+                    color: Colors.white.withValues(alpha: 0.70),
                     fontSize: 11,
                   )),
               ],
@@ -577,7 +577,7 @@ class _FeatureHighlight extends StatelessWidget {
               decoration: BoxDecoration(
                 color: i == index
                     ? Colors.white
-                    : Colors.white.withOpacity(0.30),
+                    : Colors.white.withValues(alpha: 0.30),
                 borderRadius: BorderRadius.circular(3),
               ),
             )),
@@ -643,9 +643,9 @@ class _FeatureGrid extends StatelessWidget {
           final f = _features[i];
           return Container(
             decoration: BoxDecoration(
-              color:        f.color.withOpacity(0.07),
+              color:        f.color.withValues(alpha: 0.07),
               borderRadius: BorderRadius.circular(12),
-              border:       Border.all(color: f.color.withOpacity(0.12)),
+              border:       Border.all(color: f.color.withValues(alpha: 0.12)),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -654,7 +654,7 @@ class _FeatureGrid extends StatelessWidget {
                 Container(
                   width: 32, height: 32,
                   decoration: BoxDecoration(
-                    color:        f.color.withOpacity(0.12),
+                    color:        f.color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(9),
                   ),
                   child: Icon(f.icon, color: f.color, size: 17),

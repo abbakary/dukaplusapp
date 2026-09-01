@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -66,7 +66,7 @@ class _StatCardState extends State<StatCard>
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color:   widget.gradient.colors.first.withOpacity(0.30),
+              color:   widget.gradient.colors.first.withValues(alpha: 0.30),
               blurRadius: 14,
               spreadRadius: 0,
               offset: const Offset(0, 5),
@@ -83,7 +83,7 @@ class _StatCardState extends State<StatCard>
                 Container(
                   width: 38, height: 38,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.20),
+                    color: Colors.white.withValues(alpha: 0.20),
                     borderRadius: BorderRadius.circular(11),
                   ),
                   child: Icon(widget.icon, color: Colors.white, size: 20),
@@ -94,7 +94,7 @@ class _StatCardState extends State<StatCard>
                   Container(
                     width: 26, height: 26,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
+                      color: Colors.white.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -123,7 +123,7 @@ class _StatCardState extends State<StatCard>
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.80),
+                  color: Colors.white.withValues(alpha: 0.80),
                   fontSize: 11,
                 )),
             ],
@@ -136,7 +136,7 @@ class _StatCardState extends State<StatCard>
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color:      Colors.white.withOpacity(0.85),
+                      color:      Colors.white.withValues(alpha: 0.85),
                       fontSize:   11,
                       fontWeight: FontWeight.w500,
                     )),
@@ -146,7 +146,7 @@ class _StatCardState extends State<StatCard>
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.18),
+                      color: Colors.white.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(widget.trend!,
@@ -201,9 +201,9 @@ class InfoCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.07),
+          color: color.withValues(alpha: 0.07),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withOpacity(0.18)),
+          border: Border.all(color: color.withValues(alpha: 0.18)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -211,7 +211,7 @@ class InfoCard extends StatelessWidget {
             Container(
               width: 34, height: 34,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
+                color: color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: color, size: 18),

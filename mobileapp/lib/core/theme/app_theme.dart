@@ -21,7 +21,8 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: cs,
-      scaffoldBackgroundColor: AppColors.background,
+      // Slightly more visible background so it doesn't look pure white
+      scaffoldBackgroundColor: const Color(0xFFECF0F6),
       // ── Typography ─────────────────────────────────────────────────
       textTheme: base.copyWith(
         displayLarge:   base.displayLarge?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w800, letterSpacing: -1.0),
@@ -30,13 +31,13 @@ class AppTheme {
         headlineMedium: base.headlineMedium?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 20),
         headlineSmall:  base.headlineSmall?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 18),
         titleLarge:   base.titleLarge?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 16),
-        titleMedium:  base.titleMedium?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w500, fontSize: 14),
+        titleMedium:  base.titleMedium?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w500, fontSize: 15),
         titleSmall:   base.titleSmall?.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w500, fontSize: 13),
         bodyLarge:    base.bodyLarge?.copyWith(color: AppColors.textPrimary, fontSize: 15),
-        bodyMedium:   base.bodyMedium?.copyWith(color: AppColors.textSecondary, fontSize: 13),
+        bodyMedium:   base.bodyMedium?.copyWith(color: AppColors.textSecondary, fontSize: 14),
         bodySmall:    base.bodySmall?.copyWith(color: AppColors.textHint, fontSize: 12),
-        labelLarge:   base.labelLarge?.copyWith(fontWeight: FontWeight.w600, fontSize: 14),
-        labelMedium:  base.labelMedium?.copyWith(fontWeight: FontWeight.w500, fontSize: 12),
+        labelLarge:   base.labelLarge?.copyWith(fontWeight: FontWeight.w600, fontSize: 15),
+        labelMedium:  base.labelMedium?.copyWith(fontWeight: FontWeight.w500, fontSize: 13),
         labelSmall:   base.labelSmall?.copyWith(fontSize: 11),
       ),
       // ── AppBar ─────────────────────────────────────────────────────
@@ -53,8 +54,9 @@ class AppTheme {
         titleTextStyle: GoogleFonts.poppins(
           fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -0.2,
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
-        actionsIconTheme: const IconThemeData(color: Colors.white),
+        toolbarHeight: 56,
+        iconTheme: const IconThemeData(color: Colors.white, size: 24),
+        actionsIconTheme: const IconThemeData(color: Colors.white, size: 24),
       ),
       // ── Cards ──────────────────────────────────────────────────────
       cardTheme: CardThemeData(
@@ -67,19 +69,22 @@ class AppTheme {
         clipBehavior: Clip.antiAlias,
         margin: EdgeInsets.zero,
       ),
-      // ── Buttons ────────────────────────────────────────────────────
+      // ── Buttons — bigger on real devices ──────────────────────────
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primary,
           foregroundColor: Colors.white,
           elevation: 0,
           shadowColor: Colors.transparent,
+          minimumSize: const Size(64, 52),   // taller min height for real devices
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          textStyle: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: 0.1),
+          textStyle: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: 0.1),
         ).copyWith(
           overlayColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.pressed)) return Colors.white.withOpacity(0.12);
+            if (states.contains(WidgetState.pressed)) {
+              return Colors.white.withValues(alpha: 0.12);
+            }
             return null;
           }),
         ),
@@ -87,15 +92,17 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: primary,
-          side: BorderSide(color: AppColors.border, width: 1.5),
+          side: BorderSide(color: primary, width: 1.5),
+          minimumSize: const Size(64, 52),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          textStyle: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+          textStyle: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: primary,
+          minimumSize: const Size(48, 44),
           textStyle: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
@@ -123,18 +130,18 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.danger, width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        hintStyle: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 13),
-        labelStyle: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 13),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        hintStyle: GoogleFonts.poppins(color: AppColors.textHint, fontSize: 14),
+        labelStyle: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 14),
         prefixIconColor: AppColors.textHint,
         suffixIconColor: AppColors.textHint,
       ),
       // ── Chips ──────────────────────────────────────────────────────
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.surfaceVariant,
-        selectedColor: primary.withOpacity(0.12),
-        labelStyle: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        selectedColor: primary.withValues(alpha: 0.12),
+        labelStyle: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         side: const BorderSide(color: AppColors.border),
       ),
@@ -147,8 +154,8 @@ class AppTheme {
         backgroundColor: AppColors.surface,
         selectedItemColor: primary,
         unselectedItemColor: AppColors.textHint,
-        selectedLabelStyle: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w600),
-        unselectedLabelStyle: GoogleFonts.poppins(fontSize: 10),
+        selectedLabelStyle: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600),
+        unselectedLabelStyle: GoogleFonts.poppins(fontSize: 11),
         type: BottomNavigationBarType.fixed,
         elevation: 0,
       ),
@@ -163,7 +170,7 @@ class AppTheme {
       // ── Snackbar ──────────────────────────────────────────────────
       snackBarTheme: SnackBarThemeData(
         backgroundColor: const Color(0xFF1A2A4A),
-        contentTextStyle: GoogleFonts.poppins(color: Colors.white, fontSize: 13),
+        contentTextStyle: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         behavior: SnackBarBehavior.floating,
         elevation: 6,
@@ -190,12 +197,13 @@ class AppTheme {
       ),
       // ── List tiles ─────────────────────────────────────────────────
       listTileTheme: ListTileThemeData(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         iconColor: AppColors.textSecondary,
+        minLeadingWidth: 24,
         titleTextStyle: GoogleFonts.poppins(
-          color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
+          color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w500),
         subtitleTextStyle: GoogleFonts.poppins(
-          color: AppColors.textSecondary, fontSize: 12),
+          color: AppColors.textSecondary, fontSize: 13),
       ),
       // ── Progress indicator ─────────────────────────────────────────
       progressIndicatorTheme: ProgressIndicatorThemeData(
@@ -228,8 +236,8 @@ class AppTheme {
         },
       ),
       // ── Ripple / splash ───────────────────────────────────────────
-      splashColor: primary.withOpacity(0.08),
-      highlightColor: primary.withOpacity(0.05),
+      splashColor: primary.withValues(alpha: 0.08),
+      highlightColor: primary.withValues(alpha: 0.05),
       splashFactory: InkSparkle.splashFactory,
     );
   }
