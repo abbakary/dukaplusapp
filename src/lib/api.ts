@@ -232,12 +232,63 @@ class ApiClient {
   }
   approveTenantKyc(id: string) { return this.request(`/admin/tenants/${id}/approve-kyc`, { method: 'POST' }); }
   suspendTenant(id: string) { return this.request(`/admin/tenants/${id}/suspend`, { method: 'POST' }); }
+  reactivateTenant(id: string) { return this.request(`/admin/tenants/${id}/reactivate`, { method: 'POST' }); }
+  setTenantGrace(id: string) { return this.request(`/admin/tenants/${id}/grace`, { method: 'POST' }); }
   updateAdminTenant(id: string, data: Record<string, unknown>) {
     return this.request(`/admin/tenants/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
   }
 
   getPublicShowcase() {
     return this.request<Array<Record<string, unknown>>>('/platform/showcase');
+  }
+  getPublicPlans() {
+    return this.request<Array<Record<string, unknown>>>('/platform/plans');
+  }
+  getAdminPlans() {
+    return this.request<Array<Record<string, unknown>>>('/admin/plans');
+  }
+  updateAdminPlan(id: string, data: Record<string, unknown>) {
+    return this.request<Record<string, unknown>>(`/admin/plans/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+  }
+  resetAdminPlans() {
+    return this.request<Array<Record<string, unknown>>>('/admin/plans/reset', { method: 'POST' });
+  }
+  getSubscriptionPayments() {
+    return this.request<Array<Record<string, unknown>>>('/admin/subscription-payments');
+  }
+  recordSubscriptionPayment(data: Record<string, unknown>) {
+    return this.request<Record<string, unknown>>('/admin/subscription-payments', { method: 'POST', body: JSON.stringify(data) });
+  }
+  getAdminBroadcasts() {
+    return this.request<Array<Record<string, unknown>>>('/admin/broadcasts');
+  }
+  sendAdminBroadcast(data: Record<string, unknown>) {
+    return this.request<Record<string, unknown>>('/admin/broadcasts', { method: 'POST', body: JSON.stringify(data) });
+  }
+  getTenantSettings() {
+    return this.request<{ document_config: Record<string, unknown>; business_settings: Record<string, unknown> }>('/tenant/settings');
+  }
+  getDocumentCatalog() {
+    return this.request<{
+      templates: Array<{ id: string; document_type: string; name: string; name_sw: string; layout: string; popular?: boolean }>;
+      default_active: Record<string, string>;
+      type_labels: Record<string, { en: string; sw: string }>;
+    }>('/tenant/documents/catalog');
+  }
+  updateTenantSettings(data: { document_config?: Record<string, unknown>; business_settings?: Record<string, unknown> }) {
+    return this.request('/tenant/settings', { method: 'PUT', body: JSON.stringify(data) });
+  }
+  uploadDocumentLogo(imageBase64: string) {
+    return this.request<{ document_config: Record<string, unknown>; business_settings: Record<string, unknown> }>(
+      '/tenant/settings/logo',
+      { method: 'POST', body: JSON.stringify({ image_base64: imageBase64 }) },
+    );
+  }
+  removeDocumentLogo() {
+    return this.request<{ document_config: Record<string, unknown>; business_settings: Record<string, unknown> }>(
+      '/tenant/settings/logo',
+      { method: 'DELETE' },
+    );
   }
   getAdminShowcase() {
     return this.request<Array<Record<string, unknown>>>('/admin/showcase');

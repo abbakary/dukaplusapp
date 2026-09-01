@@ -6,6 +6,7 @@ import {
 import { useState } from 'react';
 import { useAuthStore, useOfflineStore } from '@/stores';
 import { cn, t, BUSINESS_TYPE_LABELS } from '@/lib/utils';
+import { BrandMark } from '@/components/ui/BrandLogo';
 
 const navItems = [
   { to: '/app/dashboard', icon: LayoutDashboard, label: 'dashboard', perm: null },
@@ -41,9 +42,7 @@ export function AppLayout() {
     <>
       <div className="p-4 border-b border-slate-100">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center text-white font-bold text-lg">
-            D+
-          </div>
+          <BrandMark size={40} className="shrink-0" />
           <div className="min-w-0">
             <p className="font-bold text-slate-900 truncate">{user?.business_name ?? 'Duka+'}</p>
             <p className="text-xs text-slate-500">{bizLabel} · {user?.staff_role ?? user?.role}</p>

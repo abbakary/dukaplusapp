@@ -14,6 +14,7 @@ import '../../providers/auth_provider.dart';
 import '../../widgets/gradient_app_bar.dart';
 import '../../widgets/shimmer_loader.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/shell_insets.dart';
 
 class ExpensesScreen extends ConsumerStatefulWidget {
   const ExpensesScreen({super.key, this.initialTab = 0});
@@ -132,11 +133,13 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> with SingleTick
               ],
             ),
       floatingActionButton: _tabs.index == 0 && canManage
-          ? FloatingActionButton.extended(
-              onPressed: () => _showAddExpense(context),
-              icon: const Icon(Icons.add_rounded),
-              label: Text(l10n.addExpense),
-              backgroundColor: AppColors.danger,
+          ? ShellFab(
+              child: FloatingActionButton.extended(
+                onPressed: () => _showAddExpense(context),
+                icon: const Icon(Icons.add_rounded),
+                label: Text(l10n.addExpense),
+                backgroundColor: AppColors.danger,
+              ),
             )
           : null,
     );
@@ -209,11 +212,11 @@ class _OpexTab extends ConsumerWidget {
     final l10n = ref.read(appLocalizationsProvider);
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogCtx) => AlertDialog(
         title: Text(l10n.deleteExpense),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancel)),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: Text(l10n.delete)),
+          TextButton(onPressed: () => Navigator.of(dialogCtx).pop(false), child: Text(l10n.cancel)),
+          TextButton(onPressed: () => Navigator.of(dialogCtx).pop(true), child: Text(l10n.delete)),
         ],
       ),
     );
@@ -329,15 +332,17 @@ class _AllowancesTab extends ConsumerWidget {
     final transportCtrl = TextEditingController(text: (rates.dailyTransportAllowance ?? 3000).toStringAsFixed(0));
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      // Use the dialog's own context (dialogCtx) for Navigator.pop so that
+      // GoRouter's navigator assertion is not triggered.
+      builder: (dialogCtx) => AlertDialog(
         title: Text(l10n.editRates),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           TextField(controller: foodCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: l10n.foodAllowance)),
           TextField(controller: transportCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: l10n.transportAllowance)),
         ]),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancel)),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: Text(l10n.saveChanges)),
+          TextButton(onPressed: () => Navigator.of(dialogCtx).pop(false), child: Text(l10n.cancel)),
+          TextButton(onPressed: () => Navigator.of(dialogCtx).pop(true), child: Text(l10n.saveChanges)),
         ],
       ),
     );
@@ -487,8 +492,15 @@ class _ExpenseTile extends StatelessWidget {
 
   static const _categoryIcons = {
     'rent': Icons.home_outlined,
+    'utilities': Icons.bolt_outlined,
     'utilities_luku': Icons.bolt_outlined,
+    'compliance': Icons.verified_outlined,
+    'transport': Icons.local_shipping_outlined,
+    'marketing': Icons.campaign_outlined,
+    'operations': Icons.cleaning_services_outlined,
+    'finance': Icons.account_balance_outlined,
     'staff_salaries': Icons.people_outline_rounded,
+    'payroll': Icons.people_outline_rounded,
     'daily_stipends_food_transport': Icons.lunch_dining_outlined,
     'other': Icons.more_horiz_rounded,
   };
@@ -496,11 +508,14 @@ class _ExpenseTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final icon = _categoryIcons[expense.category] ?? Icons.receipt_outlined;
-    final label = ExpenseItem.categoryLabels[expense.category] ?? expense.category;
+    final label = ExpenseItem.labelFor(expense.category);
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border)),
-      child: ListTile(
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border)),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.white,
+        child: ListTile(
         leading: Icon(icon, color: AppColors.danger),
         title: Text(expense.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
         subtitle: Text('${AppFormatters.date(expense.date)} • $label', style: const TextStyle(fontSize: 11, color: AppColors.textHint)),
@@ -512,6 +527,7 @@ class _ExpenseTile extends StatelessWidget {
               InkWell(onTap: onDelete, child: const Icon(Icons.delete_outline, size: 16, color: AppColors.danger)),
             ]),
         ]),
+        ),
       ),
     );
   }
@@ -541,7 +557,7 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
       _titleCtrl.text = e.title;
       _amtCtrl.text = e.amount.toStringAsFixed(0);
       _recipCtrl.text = e.recipient;
-      _category = e.category;
+      _category = ExpenseItem.resolveDropdownValue(e.category);
       _payMethod = e.paymentMethod;
     }
   }
@@ -600,10 +616,14 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
             TextFormField(controller: _titleCtrl, decoration: InputDecoration(labelText: l10n.titleRequired), validator: (v) => (v == null || v.isEmpty) ? l10n.requiredField : null),
             TextFormField(controller: _amtCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: l10n.amountRequired, prefixText: 'TSh ')),
             DropdownButtonFormField<String>(
-              initialValue: _category,
+              value: ExpenseItem.dropdownOptions(_category).any((e) => e.key == _category)
+                  ? _category
+                  : 'other',
               decoration: InputDecoration(labelText: l10n.category),
-              items: ExpenseItem.categoryLabels.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value))).toList(),
-              onChanged: (v) => setState(() => _category = v!),
+              items: ExpenseItem.dropdownOptions(_category)
+                  .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+                  .toList(),
+              onChanged: (v) => setState(() => _category = v ?? 'other'),
             ),
             TextFormField(controller: _recipCtrl, decoration: InputDecoration(labelText: l10n.recipientVendor)),
             const SizedBox(height: 20),

@@ -62,6 +62,7 @@ import {
 } from 'recharts';
 import { Customer, Language, SaleTransaction, Product, AuthUser, UserRole, BusinessType } from '@/types/v1';
 import { getTranslation, formatTSh } from '@/utils/translations';
+import { exportSalesReport } from '@/utils/reportGenerator';
 import { ActionBar } from '@/components/v1/ActionBar';
 import { useTaxCompliance } from '@/context/TaxComplianceContext';
 import { getComplianceStatusLabel } from '@/lib/taxComplianceSettings';
@@ -217,6 +218,35 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   const weekOverWeek = useMemo(() => computeWeekOverWeekChange(sales), [sales]);
   const avgDailySales = useMemo(() => computeAverageDailySales(activeSalesData), [activeSalesData]);
+
+  const handleExportDashboard = () => {
+    const totalVatCollected = Math.round(totalSalesRevenue * (0.18 / 1.18));
+    exportSalesReport({
+      provider: {
+        businessName: currentUser?.businessName || 'Duka+ Business',
+        ownerName: currentUser?.name || 'Owner',
+        email: currentUser?.email || '',
+        phone: currentUser?.phone,
+        location: currentUser?.location,
+        tinNumber: currentUser?.tinNumber,
+        branch: currentUser?.branch,
+        plan: currentUser?.plan,
+        businessType: currentUser?.businessType,
+      },
+      sales: sales.map(s => ({
+        receipt: s.receiptNumber || s.id,
+        customer: s.customerName || (isSw ? 'Mteja wa Taslimu' : 'Walk-in'),
+        date: s.date,
+        method: (s.payments?.[0]?.method || s.type || '').toUpperCase(),
+        vat: formatTSh(s.vatAmount || Math.round(s.total * (0.18 / 1.18))),
+        total: formatTSh(s.total),
+      })),
+      totalGross: formatTSh(totalSalesRevenue),
+      totalVat: formatTSh(totalVatCollected),
+      grossProfit: formatTSh(netProfit),
+      language: language as 'en' | 'sw',
+    });
+  };
   const peakHours = useMemo(() => computePeakHoursSummary(hourlyRushData, isSw), [hourlyRushData, isSw]);
   const strategyHint = useMemo(
     () => buildDashboardStrategyHint(productInsightsSummary, isSw),
@@ -1690,7 +1720,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         onEdit={() => onNavigate('inventory')}
         onView={() => onNavigate('bi-analytics')}
         onAISuggest={onOpenAIChat}
-        onExport={() => alert(isSw ? 'Inapakua Ripoti ya Mauzo na Kodi ya TRA (Excel/PDF)...' : 'Exporting Daily TRA Sales Audit Report...')}
+        onExport={handleExportDashboard}
         customAddLabel={isSw ? '➕ Mauzo Mapya (POS)' : '➕ New POS Sale'}
         totalCount={sales.length}
       />

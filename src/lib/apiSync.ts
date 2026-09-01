@@ -4,8 +4,10 @@ import type {
   CalendarEvent,
   Customer,
   ExpenseItem,
+  PlatformBroadcast,
   Product,
   PurchaseOrder,
+  SaaSTransaction,
   SaleTransaction,
   StaffMember,
   StaffPermissions,
@@ -25,6 +27,9 @@ export function optionalApiDate(value?: string | null): string | undefined {
 export interface ApiSyncResult {
   businessType: BusinessType;
   businessName: string;
+  plan?: import('@/types/v1').SaaSPlanTier;
+  subscriptionExpiry?: string;
+  tenantStatus?: string;
   products: Product[];
   customers: Customer[];
   customersFetchOk: boolean;
@@ -318,17 +323,19 @@ export function mapAdminTenant(t: Record<string, unknown>): TenantStore {
     district: (t.district as string) ?? '',
     plan: (t.plan as TenantStore['plan']) ?? 'biashara_pro',
     status: (t.status as TenantStore['status']) ?? 'active',
-    traEfdSerial: (t.tra_efd_serial as string) ?? '',
+    traEfdDeviceSerial: (t.tra_efd_serial as string) ?? '',
+    tinNumber: (t.tin_number as string) ?? '',
+    licenseNumber: (t.license_number as string) ?? '',
     branchesCount: (t.branches_count as number) ?? 0,
+    staffCount: 0,
     monthlyGmvTzs: (t.monthly_revenue as number) ?? 0,
-    productsCount: (t.products_count as number) ?? 0,
-    customersCount: (t.customers_count as number) ?? 0,
-    createdDate: String(t.created_at ?? '').slice(0, 10),
-    lastActive: String(t.created_at ?? '').slice(0, 10),
-    subscriptionExpiry: '2027-12-31',
+    mrrTzs: (t.mrr_tzs as number) ?? 0,
+    createdAt: String(t.created_at ?? '').slice(0, 10),
+    lastSyncTime: String(t.created_at ?? '').slice(0, 10),
+    subscriptionExpiry: String(t.subscription_expiry ?? '').slice(0, 10) || new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
     kycDocumentsVerified: (t.status as string) === 'active',
-    licenseNumber: '',
-    tinNumber: '',
+    autoRenew: true,
+    storageUsedMb: 0,
   };
 }
 
@@ -376,6 +383,9 @@ export async function syncTenantFromApi(): Promise<ApiSyncResult | null> {
     return {
       businessType: profile.business_type as BusinessType,
       businessName: profile.business_name,
+      plan: (profile as { plan?: string }).plan as import('@/types/v1').SaaSPlanTier | undefined,
+      subscriptionExpiry: String((profile as { subscription_expiry?: string }).subscription_expiry ?? '').slice(0, 10) || undefined,
+      tenantStatus: (profile as { status?: string }).status,
       products: productsRaw.map(mapProduct),
       customers: customersRaw.map(mapCustomer),
       customersFetchOk: customersResult.status === 'fulfilled',
@@ -393,13 +403,55 @@ export async function syncTenantFromApi(): Promise<ApiSyncResult | null> {
   }
 }
 
-export async function syncAdminFromApi(): Promise<{ tenants: TenantStore[]; metrics: Record<string, unknown> } | null> {
+export function mapSubscriptionPayment(raw: Record<string, unknown>): SaaSTransaction {
+  return {
+    id: String(raw.id),
+    storeId: String(raw.store_id),
+    storeName: String(raw.store_name),
+    plan: raw.plan as SaaSTransaction['plan'],
+    amountTzs: Number(raw.amount_tzs ?? 0),
+    paymentMethod: (raw.payment_method as SaaSTransaction['paymentMethod']) ?? 'M-Pesa',
+    reference: String(raw.reference ?? ''),
+    date: String(raw.date ?? ''),
+    status: (raw.status as SaaSTransaction['status']) ?? 'completed',
+    billingCycle: (raw.billing_cycle as SaaSTransaction['billingCycle']) ?? 'monthly',
+  };
+}
+
+export function mapBroadcast(raw: Record<string, unknown>): PlatformBroadcast {
+  return {
+    id: String(raw.id),
+    title: String(raw.title),
+    message: String(raw.message),
+    targetAudience: (raw.target_audience as PlatformBroadcast['targetAudience']) ?? 'all',
+    targetRegion: String(raw.target_region ?? ''),
+    channel: (raw.channel as PlatformBroadcast['channel']) ?? 'both',
+    sentAt: String(raw.sent_at ?? ''),
+    sentBy: String(raw.sent_by ?? 'Provider Admin'),
+    deliveryCount: Number(raw.delivery_count ?? 0),
+    status: (raw.status as PlatformBroadcast['status']) ?? 'sent',
+  };
+}
+
+export async function syncAdminFromApi(): Promise<{
+  tenants: TenantStore[];
+  metrics: Record<string, unknown>;
+  payments: SaaSTransaction[];
+  broadcasts: PlatformBroadcast[];
+} | null> {
   try {
-    const [tenantsRaw, metrics] = await Promise.all([
+    const [tenantsRaw, metrics, paymentsRaw, broadcastsRaw] = await Promise.all([
       api.getAdminTenants(),
       api.getAdminMetrics(),
+      api.getSubscriptionPayments().catch(() => []),
+      api.getAdminBroadcasts().catch(() => []),
     ]);
-    return { tenants: tenantsRaw.map(mapAdminTenant), metrics };
+    return {
+      tenants: tenantsRaw.map(mapAdminTenant),
+      metrics,
+      payments: (paymentsRaw as Array<Record<string, unknown>>).map(mapSubscriptionPayment),
+      broadcasts: (broadcastsRaw as Array<Record<string, unknown>>).map(mapBroadcast),
+    };
   } catch {
     return null;
   }

@@ -10,18 +10,22 @@ import {
   Store,
   Zap,
 } from 'lucide-react';
-import type { BusinessType, Language, UserRole } from '@/types/v1';
+import type { BusinessType, Language, SaaSPlanTier, UserRole } from '@/types/v1';
 import {
   DEFAULT_SHOWCASE_ITEMS,
   fetchPublicShowcase,
   type PlatformShowcaseItem,
 } from '@/lib/platformShowcase';
+import { useSaasPlans } from '@/context/SaasPlansContext';
+import { formatPlanPrice, planFeatures, planPeriod } from '@/lib/saasPlans';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 
 export interface LandingPageViewProps {
   language: Language;
   onOpenLogin: () => void;
-  onOpenRegister: (businessType?: BusinessType) => void;
-  onLaunchPortal?: (role?: UserRole, type?: BusinessType) => void;
+  onOpenRegister: (businessType?: BusinessType, planTier?: SaaSPlanTier) => void;
+  onLaunchPortal?: (role?: UserRole, type?: BusinessType, planTier?: SaaSPlanTier) => void;
+  onOpenTerms?: () => void;
 }
 
 const TEAL = '#0d9488';
@@ -66,8 +70,10 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
   onOpenLogin,
   onOpenRegister,
   onLaunchPortal,
+  onOpenTerms,
 }) => {
   const isSw = language === 'sw';
+  const { plans } = useSaasPlans();
   const [showcase, setShowcase] = useState<PlatformShowcaseItem[]>(DEFAULT_SHOWCASE_ITEMS);
   const [galleryIndex, setGalleryIndex] = useState(0);
 
@@ -88,9 +94,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const startRegister = (type?: BusinessType) => {
-    if (onLaunchPortal) onLaunchPortal(undefined, type);
-    else onOpenRegister(type);
+  const startRegister = (type?: BusinessType, planTier?: SaaSPlanTier) => {
+    if (onLaunchPortal) onLaunchPortal(undefined, type, planTier);
+    else onOpenRegister(type, planTier);
   };
 
   return (
@@ -98,11 +104,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       {/* Navigation */}
       <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-100">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-2 cursor-pointer">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-lg" style={{ background: TEAL }}>
-              +
-            </div>
-            <span className="font-bold tracking-tight text-slate-800">DUKA+</span>
+          <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center cursor-pointer">
+            <BrandLogo height={44} />
           </button>
           <nav className="hidden md:flex items-center gap-8 text-sm text-slate-600">
             <button type="button" onClick={() => scrollTo('process')} className="hover:text-slate-900 cursor-pointer">{isSw ? 'Jinsi inavyofanya' : 'How it works'}</button>
@@ -330,59 +333,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               : 'Transparent pricing with no free tier — pick the plan that matches your branches, staff, and feature needs.'}
           </p>
           <div className="mt-12 grid md:grid-cols-3 gap-6">
-            {[
-              {
-                name: isSw ? 'Mwanzo' : 'Starter',
-                price: 'TZS 39,000',
-                period: isSw ? '/mwezi' : '/mo',
-                tag: isSw ? 'Duka moja linaloanza' : 'Single-shop launch',
-                popular: false,
-                contactUs: false,
-                feats: [
-                  isSw ? 'Tawi 1 na wafanyakazi 3' : '1 branch, up to 3 staff',
-                  isSw ? 'POS kamili (M-Pesa, pesa taslimu, mkopo)' : 'Full POS (M-Pesa, cash, credit)',
-                  isSw ? 'Hifadhi & bidhaa hadi 500' : 'Inventory up to 500 products',
-                  isSw ? 'Wateja, madeni & wasambazaji' : 'Customers, debt & suppliers',
-                  isSw ? 'Ripoti za mauzo & stoo' : 'Sales & stock reports',
-                  isSw ? 'Simu + wavuti (offline sync)' : 'Mobile + web (offline sync)',
-                ],
-              },
-              {
-                name: 'Biashara Pro',
-                price: 'TZS 79,000',
-                period: isSw ? '/mwezi' : '/mo',
-                tag: isSw ? 'Inayopendekezwa' : 'Most popular',
-                popular: true,
-                contactUs: false,
-                feats: [
-                  isSw ? 'Matawi 5 na wafanyakazi 15' : 'Up to 5 branches, 15 staff',
-                  isSw ? 'Udhibiti wa majukumu (RBAC)' : 'Role-based staff permissions',
-                  isSw ? 'Risiti za TRA EFD & VAT 18%' : 'TRA EFD receipts & 18% VAT',
-                  isSw ? 'Mkopo wa wateja & malipo ya awamu' : 'Customer credit & installments',
-                  isSw ? 'Ripoti za faida, COGS & posho' : 'Profit, COGS & payroll reports',
-                  isSw ? 'Ushauri wa AI & utabiri wa stoo' : 'AI insights & stock forecasting',
-                  isSw ? 'Manunuzi, gharama & kalenda' : 'Purchasing, expenses & calendar',
-                ],
-              },
-              {
-                name: isSw ? 'Biashara Kubwa' : 'Enterprise',
-                price: isSw ? 'Maalum' : 'Custom',
-                period: isSw ? ' bei' : ' pricing',
-                tag: isSw ? 'Minyororo ya maduka' : 'Store chains & groups',
-                popular: false,
-                contactUs: true,
-                feats: [
-                  isSw ? 'Matawi & wafanyakazi wasio na kikomo' : 'Unlimited branches & staff',
-                  isSw ? 'API, ushirikiano & uhamisho wa data' : 'API access, integrations & data migration',
-                  isSw ? 'Msaada wa kipekee & onboarding maalum' : 'Dedicated support & custom onboarding',
-                  isSw ? 'SLA ya juu & ufuatiliaji wa mfumo' : 'Premium SLA & system monitoring',
-                  isSw ? 'Ripoti za kundi & dashbodi ya meneja' : 'Group reports & executive dashboard',
-                  isSw ? 'Usimamizi wa leseni, TIN & KYC' : 'License, TIN & compliance workflows',
-                ],
-              },
-            ].map(plan => (
+            {plans.map(plan => (
               <div
-                key={plan.name}
+                key={plan.id}
                 className={`rounded-2xl border p-6 flex flex-col ${plan.popular ? 'border-teal-500 shadow-lg ring-1 ring-teal-500/20 relative' : 'border-slate-200'}`}
               >
                 {plan.popular && (
@@ -390,14 +343,16 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                     {isSw ? 'Maarufu' : 'Popular'}
                   </span>
                 )}
-                <h3 className="font-serif font-bold text-xl">{plan.name}</h3>
+                <h3 className="font-serif font-bold text-xl">{isSw ? plan.nameSw : plan.name}</h3>
                 <div className="mt-2 flex items-baseline gap-1">
-                  <span className="text-2xl font-black">{plan.price}</span>
-                  <span className="text-sm text-slate-500 font-medium">{plan.period}</span>
+                  <span className="text-2xl font-black">{formatPlanPrice(plan, isSw)}</span>
+                  {!plan.contactUs && (
+                    <span className="text-sm text-slate-500 font-medium">{planPeriod(isSw)}</span>
+                  )}
                 </div>
-                <p className="text-xs text-slate-500 mt-1">{plan.tag}</p>
+                <p className="text-xs text-slate-500 mt-1">{isSw ? plan.tagSw : plan.tagEn}</p>
                 <ul className="mt-6 space-y-2.5 flex-1">
-                  {plan.feats.map(f => (
+                  {planFeatures(plan, language).map(f => (
                     <li key={f} className="flex items-start gap-2 text-sm text-slate-600">
                       <CheckCircle2 className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" /> {f}
                     </li>
@@ -405,11 +360,11 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                 </ul>
                 <button
                   type="button"
-                  onClick={() => startRegister()}
+                  onClick={() => startRegister(undefined, plan.tier)}
                   className={`mt-6 w-full py-2.5 rounded-full text-sm font-bold cursor-pointer ${plan.popular ? 'text-white' : 'border border-slate-200 bg-white text-slate-800'}`}
                   style={plan.popular ? { background: TEAL } : undefined}
                 >
-                  {'contactUs' in plan && plan.contactUs
+                  {plan.contactUs
                     ? (isSw ? 'Wasiliana nasi' : 'Contact us')
                     : (isSw ? 'Chagua mpango' : 'Choose plan')}
                 </button>
@@ -490,10 +445,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       <footer className="border-t border-slate-200 bg-white py-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 grid sm:grid-cols-4 gap-8 text-sm">
           <div>
-            <div className="flex items-center gap-2 font-bold text-slate-800">
-              <div className="w-7 h-7 rounded-lg text-white flex items-center justify-center text-sm font-black" style={{ background: TEAL }}>+</div>
-              DUKA+
-            </div>
+            <BrandLogo height={36} className="font-bold text-slate-800" />
             <p className="text-slate-500 mt-3 text-xs leading-relaxed">
               {isSw ? 'ERP ya biashara kwa Tanzania.' : 'Business ERP for Tanzania.'}
             </p>
@@ -501,19 +453,39 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           {[
             { h: 'Product', links: [isSw ? 'Jinsi inavyofanya' : 'How it works', isSw ? 'Mipango' : 'Plans', isSw ? 'Kwa biashara yako' : 'For your business'] },
             { h: 'Company', links: [isSw ? 'Kuhusu' : 'About', isSw ? 'Wasiliana' : 'Contact'] },
-            { h: 'Legal', links: ['Privacy', 'Terms', 'TRA EFD'] },
+            { h: 'Legal', links: [
+              { label: isSw ? 'Faragha' : 'Privacy', action: onOpenTerms },
+              { label: isSw ? 'Masharti' : 'Terms', action: onOpenTerms },
+              { label: 'TRA EFD', action: onOpenTerms },
+            ]},
           ].map(col => (
             <div key={col.h}>
               <h4 className="font-bold text-xs uppercase tracking-wide text-slate-400">{col.h}</h4>
               <ul className="mt-3 space-y-2 text-slate-600">
                 {col.links.map(l => (
-                  <li key={l}><button type="button" className="hover:text-teal-700 cursor-pointer">{l}</button></li>
+                  <li key={typeof l === 'string' ? l : l.label}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (typeof l !== 'string') {
+                          l.action?.();
+                          return;
+                        }
+                        if (l === (isSw ? 'Mipango' : 'Plans')) scrollTo('plans');
+                        else if (l === (isSw ? 'Jinsi inavyofanya' : 'How it works')) scrollTo('process');
+                        else if (l === (isSw ? 'Kwa biashara yako' : 'For your business')) scrollTo('features');
+                      }}
+                      className="hover:text-teal-700 cursor-pointer"
+                    >
+                      {typeof l === 'string' ? l : l.label}
+                    </button>
+                  </li>
                 ))}
               </ul>
             </div>
           ))}
         </div>
-        <p className="text-center text-xs text-slate-400 mt-10">© {new Date().getFullYear()} Duka+ Cloud · Tanzania</p>
+        <p className="text-center text-xs text-slate-400 mt-10">© {new Date().getFullYear()} DukaMkononi · Tanzania</p>
       </footer>
     </div>
   );

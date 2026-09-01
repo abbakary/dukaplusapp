@@ -37,6 +37,7 @@ import {
   SupplierPayment, 
   CalendarEvent,
   BusinessType,
+  AuthUser,
 } from '@/types/v1';
 import { formatTSh, getTranslation } from '@/utils/translations';
 import { ActionBar } from '@/components/v1/ActionBar';
@@ -54,6 +55,7 @@ import {
 import confetti from 'canvas-confetti';
 import { api } from '@/lib/api';
 import { mapSupplier, mapPurchaseOrder, mapEvent, optionalApiDate, supplierToApiPayload, eventToApiPayload } from '@/lib/apiSync';
+import { exportProcurementReport } from '@/utils/reportGenerator';
 
 interface SuppliersViewProps {
   language: Language;
@@ -72,6 +74,7 @@ interface SuppliersViewProps {
   onOpenAIChatWithPrompt?: (prompt: string) => void;
   onReceivePO?: (poId: string) => void;
   businessType?: BusinessType;
+  currentUser?: AuthUser | null;
 }
 
 function buildCustomItemDefaults(businessType: BusinessType, lang: 'sw' | 'en') {
@@ -107,6 +110,7 @@ export const SuppliersView: React.FC<SuppliersViewProps> = ({
   onOpenAIChatWithPrompt,
   onReceivePO,
   businessType = 'retail',
+  currentUser,
 }) => {
   const t = (key: any) => getTranslation(language, key);
   const isSw = language === 'sw';
@@ -117,6 +121,32 @@ export const SuppliersView: React.FC<SuppliersViewProps> = ({
   const productPlaceholder = getProductNamePlaceholder(businessType, lang);
   const defaultCategory = getDefaultMainCategory(businessType, lang);
   const supplierIndustry = getSupplierIndustryCategory(businessType, lang);
+
+  const handleExportProcurement = () => {
+    const totalValue = purchaseOrders.reduce((s, po) => s + (po.totalAmount || 0), 0);
+    exportProcurementReport({
+      provider: {
+        businessName: currentUser?.businessName || 'Duka+ Business',
+        ownerName:    currentUser?.name          || 'Owner',
+        email:        currentUser?.email         || '',
+        phone:        currentUser?.phone,
+        location:     currentUser?.location,
+        tinNumber:    currentUser?.tinNumber,
+        branch:       currentUser?.branch,
+        businessType: currentUser?.businessType,
+      },
+      orders: purchaseOrders.map(po => ({
+        poNumber:  po.orderNumber || po.id,
+        supplier:  po.supplierName,
+        date:      po.orderDate,
+        status:    po.status.toUpperCase(),
+        items:     `${po.items?.length ?? 0}`,
+        total:     formatTSh(po.totalAmount || 0),
+      })),
+      totalValue: formatTSh(totalValue),
+      language:   language as 'en' | 'sw',
+    });
+  };
 
   // Active view tab: 'suppliers' | 'orders' | 'payments'
   const [activeSubTab, setActiveSubTab] = useState<'suppliers' | 'orders' | 'payments'>('orders');
@@ -715,7 +745,7 @@ export const SuppliersView: React.FC<SuppliersViewProps> = ({
             onOpenAIChatWithPrompt('Toa uchambuzi wa bei za wasambazaji, muda wa kuagiza bidhaa za dawa, na utengeneze orodha ya agizo jipya la ununuzi kulingana na bidhaa zilizopungua stoo.');
           }
         }}
-        onExport={() => alert('Exporting Procurement & Inward Stock Ledger (Excel/PDF)...')}
+        onExport={handleExportProcurement}
         customAddLabel={activeSubTab === 'orders' ? '➕ Create PO' : activeSubTab === 'suppliers' ? '➕ Add Supplier' : '➕ Record Payment'}
         selectedCount={selectedPO ? 1 : 0}
         totalCount={activeSubTab === 'orders' ? purchaseOrders.length : suppliers.length}

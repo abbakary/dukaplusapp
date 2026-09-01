@@ -20,9 +20,10 @@ import {
   Clock,
   Award
 } from 'lucide-react';
-import { Customer, Language, DunningStage } from '@/types/v1';
+import { Customer, Language, DunningStage, AuthUser } from '@/types/v1';
 import { getTranslation, formatTSh } from '@/utils/translations';
 import { ActionBar } from '@/components/v1/ActionBar';
+import { exportCustomerLedger } from '@/utils/reportGenerator';
 import confetti from 'canvas-confetti';
 import { api } from '@/lib/api';
 import { mapCustomer, customerToApiPayload } from '@/lib/apiSync';
@@ -33,6 +34,7 @@ interface CustomersCRMViewProps {
   setCustomers: React.Dispatch<React.SetStateAction<Customer[]>>;
   onCustomersChanged?: () => void | Promise<void>;
   onOpenAIChatWithPrompt?: (prompt: string) => void;
+  currentUser?: AuthUser | null;
 }
 
 export const CustomersCRMView: React.FC<CustomersCRMViewProps> = ({
@@ -41,9 +43,33 @@ export const CustomersCRMView: React.FC<CustomersCRMViewProps> = ({
   setCustomers,
   onCustomersChanged,
   onOpenAIChatWithPrompt,
+  currentUser,
 }) => {
   const t = (key: any) => getTranslation(language, key);
   const isSw = language === 'sw';
+
+  const handleExportCustomers = () => {
+    const totalReceivables = customers.reduce((s, c) => s + (c.outstandingBalance || c.creditLimit - c.creditLimit + (c as any).balance || 0), 0);
+    exportCustomerLedger({
+      provider: {
+        businessName: currentUser?.businessName || 'Duka+ Business',
+        ownerName:    currentUser?.name          || 'Owner',
+        email:        currentUser?.email         || '',
+        phone:        (currentUser as any)?.phone,
+        tinNumber:    (currentUser as any)?.tinNumber,
+        businessType: currentUser?.businessType,
+      },
+      customers: customers.map(c => ({
+        name:      c.name,
+        phone:     c.phone,
+        purchases: formatTSh((c as any).totalPurchases || 0),
+        balance:   formatTSh((c as any).balance || c.outstandingBalance || 0),
+        lastSeen:  (c as any).lastPurchaseDate || (c as any).lastSeen || '—',
+      })),
+      totalReceivables: formatTSh(totalReceivables),
+      language: language as 'en' | 'sw',
+    });
+  };
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(customers[0]?.id || null);
@@ -175,7 +201,7 @@ export const CustomersCRMView: React.FC<CustomersCRMViewProps> = ({
             onOpenAIChatWithPrompt(`Fanya uchambuzi wa hatari ya mkopo (Credit Risk Assessment) kwa mteja ${selectedCustomer.name} mwenye deni la ${formatTSh(selectedCustomer.balance)} na kikomo cha ${formatTSh(selectedCustomer.creditLimit)}.`);
           }
         }}
-        onExport={() => alert(`Exporting Customer Ledger Statement for ${selectedCustomer?.name || 'All'} (CSV/PDF)...`)}
+        onExport={handleExportCustomers}
         customAddLabel="➕ Register Customer"
         selectedCount={selectedCustomerId ? 1 : 0}
         totalCount={customers.length}

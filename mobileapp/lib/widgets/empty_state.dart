@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
 
+/// General empty / zero-data state.
+///
+/// Adapts automatically to the available space:
+/// - In tight constraints (e.g. inside a short [Expanded]) it collapses to a
+///   single centred row (icon + text) so it never overflows.
+/// - In generous constraints it shows the full centred column layout.
 class EmptyState extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -20,45 +26,80 @@ class EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: primary.withOpacity(0.08),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: 48, color: primary.withOpacity(0.6)),
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // When the available height is very small, show a compact row.
+        if (constraints.maxHeight < 140) {
+          return Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 20, color: primary.withOpacity(0.5)),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondary,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            Text(title,
-              style: const TextStyle(
-                fontSize: 17, fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-              textAlign: TextAlign.center,
+          );
+        }
+
+        // Normal full layout.
+        return Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: primary.withOpacity(0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, size: 36, color: primary.withOpacity(0.55)),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    subtitle!,
+                    style: const TextStyle(
+                        fontSize: 13, color: AppColors.textSecondary),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+                if (actionLabel != null && onAction != null) ...[
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: onAction,
+                    child: Text(actionLabel!),
+                  ),
+                ],
+              ],
             ),
-            if (subtitle != null) ...[
-              const SizedBox(height: 8),
-              Text(subtitle!,
-                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                textAlign: TextAlign.center,
-              ),
-            ],
-            if (actionLabel != null && onAction != null) ...[
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: onAction,
-                child: Text(actionLabel!),
-              ),
-            ],
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -79,10 +120,10 @@ class ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => EmptyState(
-    icon: Icons.error_outline_rounded,
-    title: title,
-    subtitle: message,
-    actionLabel: onRetry != null ? retryLabel : null,
-    onAction: onRetry,
-  );
+        icon: Icons.error_outline_rounded,
+        title: title,
+        subtitle: message,
+        actionLabel: onRetry != null ? retryLabel : null,
+        onAction: onRetry,
+      );
 }

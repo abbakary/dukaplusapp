@@ -5,6 +5,32 @@ import {
   loadTaxComplianceSettings,
   saveTaxComplianceSettings,
 } from '@/lib/taxComplianceSettings';
+import { api } from '@/lib/api';
+
+function businessSettingsFromTax(settings: TaxComplianceSettings): Record<string, unknown> {
+  return {
+    discountEnabled: settings.discountEnabled,
+    maxDiscountPercent: settings.maxDiscountPercent,
+    showDiscountOnReceipts: settings.showDiscountOnReceipts,
+    showDiscountOnDocuments: settings.showDiscountOnDocuments,
+    vatEnabled: settings.vatEnabled,
+    vatRate: settings.vatRate,
+    mode: settings.mode,
+  };
+}
+
+function mergeTaxFromBusinessSettings(base: TaxComplianceSettings, raw: Record<string, unknown>): TaxComplianceSettings {
+  return {
+    ...base,
+    discountEnabled: raw.discountEnabled !== undefined ? Boolean(raw.discountEnabled) : base.discountEnabled,
+    maxDiscountPercent: raw.maxDiscountPercent !== undefined ? Number(raw.maxDiscountPercent) : base.maxDiscountPercent,
+    showDiscountOnReceipts: raw.showDiscountOnReceipts !== undefined ? Boolean(raw.showDiscountOnReceipts) : base.showDiscountOnReceipts,
+    showDiscountOnDocuments: raw.showDiscountOnDocuments !== undefined ? Boolean(raw.showDiscountOnDocuments) : base.showDiscountOnDocuments,
+    vatEnabled: raw.vatEnabled !== undefined ? Boolean(raw.vatEnabled) : base.vatEnabled,
+    vatRate: raw.vatRate !== undefined ? Number(raw.vatRate) : base.vatRate,
+    mode: (raw.mode as TaxComplianceSettings['mode']) ?? base.mode,
+  };
+}
 
 interface TaxComplianceContextValue {
   settings: TaxComplianceSettings;
@@ -54,10 +80,25 @@ export const TaxComplianceProvider: React.FC<TaxComplianceProviderProps> = ({
     }
   }, [tinNumber, settings.tinNumber]);
 
+  useEffect(() => {
+    if (!tenantId) return;
+    api.getTenantSettings()
+      .then(res => {
+        const biz = res.business_settings ?? {};
+        if (Object.keys(biz).length) {
+          setSettings(prev => mergeTaxFromBusinessSettings(prev, biz));
+        }
+      })
+      .catch(() => undefined);
+  }, [tenantId]);
+
   const persist = useCallback(
     (next: TaxComplianceSettings) => {
       setSettings(next);
       saveTaxComplianceSettings(tenantId, next);
+      if (tenantId) {
+        void api.updateTenantSettings({ business_settings: businessSettingsFromTax(next) }).catch(() => undefined);
+      }
     },
     [tenantId],
   );

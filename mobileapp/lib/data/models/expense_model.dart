@@ -48,12 +48,19 @@ class ExpenseItem {
 
   static const Map<String, String> categoryLabels = {
     'rent':                        'Rent',
+    'utilities':                   'Utilities',
     'utilities_luku':              'Electricity (LUKU)',
     'water':                       'Water',
+    'payroll':                     'Staff Payroll',
     'staff_salaries':              'Staff Salaries',
     'daily_stipends_food_transport': 'Food & Transport',
-    'licenses_permits_brela_tmda': 'Licenses & Permits',
+    'compliance':                  'Compliance & TRA',
+    'transport':                   'Transport',
+    'marketing':                   'Marketing',
     'marketing_sms':               'Marketing & SMS',
+    'operations':                  'Operations',
+    'finance':                     'Finance & Bank',
+    'licenses_permits_brela_tmda': 'Licenses & Permits',
     'maintenance_repairs':         'Maintenance & Repairs',
     'supplier_settlements':        'Supplier Payments',
     'petty_cash':                  'Petty Cash',
@@ -62,4 +69,30 @@ class ExpenseItem {
     'cleaning_sanitation':         'Cleaning & Sanitation',
     'other':                       'Other',
   };
+
+  /// Human-readable label; supports API/seed categories not in the static map.
+  static String labelFor(String category) {
+    if (categoryLabels.containsKey(category)) return categoryLabels[category]!;
+    return category
+        .split('_')
+        .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
+        .join(' ');
+  }
+
+  /// Dropdown options — always includes [selected] so edit forms never crash.
+  static List<MapEntry<String, String>> dropdownOptions([String? selected]) {
+    final map = Map<String, String>.from(categoryLabels);
+    if (selected != null && selected.isNotEmpty && !map.containsKey(selected)) {
+      map[selected] = labelFor(selected);
+    }
+    final entries = map.entries.toList()
+      ..sort((a, b) => a.value.compareTo(b.value));
+    return entries;
+  }
+
+  static String resolveDropdownValue(String category) {
+    if (category.isEmpty) return 'other';
+    if (categoryLabels.containsKey(category)) return category;
+    return category;
+  }
 }

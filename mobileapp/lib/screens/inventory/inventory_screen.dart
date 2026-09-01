@@ -15,6 +15,8 @@ import '../../widgets/shimmer_loader.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/search_bar_widget.dart';
 import '../../widgets/product_qr_sheet.dart';
+import '../../widgets/ai_assistant_fab.dart';
+import '../../widgets/shell_insets.dart';
 
 class InventoryScreen extends ConsumerStatefulWidget {
   const InventoryScreen({super.key});
@@ -50,6 +52,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen>
         title: l10n.inventory,
         subtitle: l10n.stockAndProducts,
         actions: [
+          AiAppBarButton(prompt: l10n.aiInventoryPrompt),
           IconButton(
             icon: const Icon(Icons.qr_code_2_rounded, color: Colors.white),
             tooltip: l10n.qrShelfLabels,
@@ -117,10 +120,12 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen>
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddProductSheet(context),
-        icon: const Icon(Icons.add_rounded),
-        label: Text(l10n.addProduct),
+      floatingActionButton: ShellFab(
+        child: FloatingActionButton.extended(
+          onPressed: () => _showAddProductSheet(context),
+          icon: const Icon(Icons.add_rounded),
+          label: Text(l10n.addProduct),
+        ),
       ),
     );
   }
@@ -193,7 +198,7 @@ class _ProductList extends ConsumerWidget {
           );
         }
         return ListView.builder(
-          padding: const EdgeInsets.all(12),
+          padding: ShellInsets.listPadding(context, withFab: true),
           itemCount: products.length,
           itemBuilder: (_, i) => _ProductTile(product: products[i]),
         );

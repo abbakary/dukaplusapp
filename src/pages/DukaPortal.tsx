@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { 
   Customer, 
   Language, 
@@ -56,9 +56,9 @@ import { DashboardView } from '@/components/v1/DashboardView';
 import { SuperAdminDashboardView } from '@/components/v1/SuperAdminDashboardView';
 import { SuperAdminTenantsView } from '@/components/v1/SuperAdminTenantsView';
 import { SuperAdminSubscriptionsView } from '@/components/v1/SuperAdminSubscriptionsView';
-import { SuperAdminBroadcastsView } from '@/components/v1/SuperAdminBroadcastsView';
-import { SuperAdminTelemetryView } from '@/components/v1/SuperAdminTelemetryView';
-import { SuperAdminOperatorsView } from '@/components/v1/SuperAdminOperatorsView';
+import { SuperAdminPlansView } from '@/components/v1/SuperAdminPlansView';
+import { SuperAdminRemindersView } from '@/components/v1/SuperAdminRemindersView';
+import { derivePaymentStatus } from '@/lib/saasPlans';
 import { CustomersCRMView } from '@/components/v1/CustomersCRMView';
 import { ReceivablesPayablesView } from '@/components/v1/ReceivablesPayablesView';
 import { BranchManagementView } from '@/components/v1/BranchManagementView';
@@ -73,9 +73,10 @@ import { AdminApprovalsView } from '@/components/v1/AdminApprovalsView';
 import { LandingPageView } from '@/components/v1/LandingPageView';
 import { PublicLoginView } from '@/components/v1/PublicLoginView';
 import { PublicRegisterWizardView } from '@/components/v1/PublicRegisterWizardView';
-import { SuperAdminShowcaseView } from '@/components/v1/SuperAdminShowcaseView';
+import { TermsOfServiceView } from '@/components/v1/TermsOfServiceView';
 import { AuthModalOrView } from '@/components/v1/AuthModalOrView';
 import { AccountSettingsView } from '@/components/v1/AccountSettingsView';
+import { DocumentsView } from '@/components/v1/DocumentsView';
 import { PendingTransactionsView } from '@/components/v1/PendingTransactionsView';
 import {
   analyzeCompletionGaps,
@@ -87,6 +88,7 @@ import {
   type OpenTransactionDraft,
 } from '@/lib/transactionEngine';
 import { TaxComplianceProvider } from '@/context/TaxComplianceContext';
+import { DocumentTemplateProvider } from '@/context/DocumentTemplateContext';
 import { AIChatbotDrawer } from '@/components/v1/AIChatbotDrawer';
 import { WorkplaceView } from '@/components/v1/WorkplaceView';
 import confetti from 'canvas-confetti';
@@ -138,7 +140,7 @@ const VENDOR_ROUTE_TABS = [
   'branches', 'branch-management', 'calendar', 'inventory', 'suppliers', 'reports',
   'analytics', 'bi-analytics', 'bi', 'product-geo-matrix', 'geo-analytics', 'matrix',
   'expenses-payroll', 'expenses', 'payroll', 'predictive', 'forecasting',
-  'admin-approvals', 'admin_approvals', 'profile', 'settings', 'staff-site',
+  'admin-approvals', 'admin_approvals', 'profile', 'settings', 'documents', 'staff-site',
   'workplace-reception', 'workplace-kitchen', 'workplace-waiter', 'workplace-restaurant-live',
   'workplace-tables', 'workplace-appointments', 'workplace-prescriptions',
   'workplace-fractional', 'workplace-barcodes',
@@ -175,6 +177,7 @@ export default function DukaPortal() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
   const [authPreselectType, setAuthPreselectType] = useState<BusinessType | undefined>(undefined);
+  const [authPreselectPlan, setAuthPreselectPlan] = useState<SaaSPlanTier | undefined>(undefined);
 
   // Core Centralized Connected Data Stores
   const [customers, setCustomers] = useState<Customer[]>(EMPTY_CUSTOMERS);
@@ -198,6 +201,9 @@ export default function DukaPortal() {
   const [posPreloadDraftId, setPosPreloadDraftId] = useState<string | null>(null);
   const [posTableLabel, setPosTableLabel] = useState<string | null>(null);
   const [currentPlanTier, setCurrentPlanTier] = useState<SaaSPlanTier>('biashara_pro');
+  const [subscriptionExpiry, setSubscriptionExpiry] = useState<string>(
+    () => new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+  );
 
   const [pendingSyncQueue, setPendingSyncQueue] = useState<Array<Record<string, unknown>>>([]);
 
@@ -226,6 +232,8 @@ export default function DukaPortal() {
     if (!data) return;
     setBusinessType(data.businessType);
     setBusinessName(data.businessName);
+    if (data.plan) setCurrentPlanTier(data.plan);
+    if (data.subscriptionExpiry) setSubscriptionExpiry(data.subscriptionExpiry);
     setProducts(data.products);
     if (data.customersFetchOk) {
       setCustomers(prev => mergeCustomersFromApi(prev, data.customers));
@@ -276,6 +284,8 @@ export default function DukaPortal() {
     const data = await syncAdminFromApi();
     if (!data) return;
     setTenants(data.tenants);
+    setSaasTransactions(data.payments);
+    setPlatformBroadcasts(data.broadcasts);
     setApplications(data.tenants
       .filter(t => t.status === 'pending' || t.status === 'pending_kyc')
       .map(t => ({
@@ -417,6 +427,11 @@ export default function DukaPortal() {
     } else {
       await applyApiTenantData();
       const bt = user.businessType || businessType;
+      if (options?.fromRegistration && authPreselectPlan) {
+        setCurrentPlanTier(authPreselectPlan);
+      }
+      if (user.subscriptionExpiry) setSubscriptionExpiry(user.subscriptionExpiry);
+      else if (user.plan) setCurrentPlanTier(user.plan);
       setActiveTab(options?.fromRegistration ? getDefaultWorkplaceTab(bt) : 'dashboard');
     }
   };
@@ -430,20 +445,31 @@ export default function DukaPortal() {
   const handleLaunchPortalFromLanding = (
     role?: UserRole,
     type?: BusinessType,
+    plan?: SaaSPlanTier,
   ) => {
     if (role === 'super_admin') {
       setActiveTab('login');
       return;
     }
+    if (plan) setAuthPreselectPlan(plan);
     setActiveTab('register');
     if (type) setAuthPreselectType(type);
   };
 
   const handleOpenLoginFromPublic = () => setActiveTab('login');
-  const handleOpenRegisterFromPublic = (type?: BusinessType) => {
+  const handleOpenRegisterFromPublic = (type?: BusinessType, plan?: SaaSPlanTier) => {
     if (type) setAuthPreselectType(type);
+    if (plan) setAuthPreselectPlan(plan);
     setActiveTab('register');
   };
+
+  const providerUnpaidCount = useMemo(
+    () => tenants.filter(t => {
+      const ps = derivePaymentStatus(t.subscriptionExpiry, t.status);
+      return ps === 'unpaid' || ps === 'overdue' || ps === 'grace';
+    }).length,
+    [tenants],
+  );
 
   // Instant Approve Application from Pending screen
   const handleApproveApplication = (appId?: string) => {
@@ -500,6 +526,8 @@ export default function DukaPortal() {
     setBusinessName(tenant.name);
     setBusinessType(tenant.type);
     setUserRole('vendor_owner');
+    setCurrentPlanTier(tenant.plan);
+    setSubscriptionExpiry(tenant.subscriptionExpiry);
     setActiveTab('dashboard');
     confetti({
       particleCount: 40,
@@ -995,6 +1023,7 @@ export default function DukaPortal() {
           onOpenLogin={handleOpenLoginFromPublic}
           onOpenRegister={handleOpenRegisterFromPublic}
           onLaunchPortal={handleLaunchPortalFromLanding}
+          onOpenTerms={() => setActiveTab('terms')}
         />
       </div>
     );
@@ -1016,15 +1045,35 @@ export default function DukaPortal() {
       <PublicRegisterWizardView
         language={language}
         initialBusinessType={authPreselectType}
+        initialPlan={authPreselectPlan}
         onBack={() => setActiveTab('landing')}
         onLogin={() => setActiveTab('login')}
+        onOpenTerms={() => setActiveTab('terms')}
         onRegisterSuccess={user => void handleLoginUser(user, { fromRegistration: true })}
+      />
+    );
+  }
+
+  if (activeTab === 'terms') {
+    return (
+      <TermsOfServiceView
+        language={language}
+        onBack={() => setActiveTab('landing')}
       />
     );
   }
 
   // Decide if we should render the Super Admin / Platform Provider Shell
   const isSuperAdminMode = userRole === 'super_admin';
+  const vendorPaymentStatus = !isSuperAdminMode && subscriptionExpiry
+    ? derivePaymentStatus(
+        subscriptionExpiry,
+        currentUser?.status === 'rejected' ? 'suspended' : 'active',
+      )
+    : 'paid';
+  const vendorAccessBlocked =
+    !isSuperAdminMode &&
+    (currentUser?.status === 'rejected' || vendorPaymentStatus === 'overdue');
 
   return (
     <TaxComplianceProvider
@@ -1032,7 +1081,11 @@ export default function DukaPortal() {
       businessName={businessName || currentUser?.businessName}
       tinNumber={currentUser?.tinNumber}
     >
-    <div className="flex h-screen bg-[#f0f2f5] text-[#323130] overflow-hidden font-sans">
+    <DocumentTemplateProvider
+      tenantId={currentUser?.businessId || currentUser?.id}
+      businessName={businessName || currentUser?.businessName}
+    >
+    <div className={`flex h-screen overflow-hidden font-sans ${isSuperAdminMode ? 'bg-[#F9F9F7] text-[#003322]' : 'bg-[#f0f2f5] text-[#323130]'}`}>
       {/* 1. Left Sidebar */}
       {isSuperAdminMode ? (
         <div className="shrink-0 flex items-stretch p-3 pr-2 z-30">
@@ -1042,7 +1095,10 @@ export default function DukaPortal() {
           language={language}
           tenantsCount={tenants.length}
           pendingApprovalsCount={applications.filter(a => a.status === 'pending').length}
-          telemetryErrorsCount={0}
+          unpaidCount={providerUnpaidCount}
+          onGoToLanding={() => {
+            setActiveTab('landing');
+          }}
           onSwitchToVendorMode={() => {
             setUserRole('vendor_owner');
             setActiveTab('dashboard');
@@ -1085,9 +1141,7 @@ export default function DukaPortal() {
           language={language}
           setLanguage={setLanguage}
           role={userRole}
-          setRole={handleRoleChange}
           userRole={userRole}
-          setUserRole={handleRoleChange}
           businessType={businessType}
           setBusinessType={setBusinessType}
           isOnline={isOnline}
@@ -1114,55 +1168,20 @@ export default function DukaPortal() {
         />
 
         {/* Scrollable View Container */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-white/80 backdrop-blur-sm rounded-2xl border border-[#E1DFDD]/80 shadow-sm">
+        <main className={`flex-1 overflow-y-auto p-4 md:p-6 rounded-2xl shadow-sm ${isSuperAdminMode ? 'bg-[#F9F9F7] border border-[#003322]/10' : 'bg-white/80 backdrop-blur-sm border border-[#E1DFDD]/80'}`}>
           <div className="max-w-7xl mx-auto">
             {/* SUPER ADMIN / SYSTEM PROVIDER VIEWS */}
             {isSuperAdminMode && (
               <>
-                {(activeTab === 'super-dashboard' || activeTab === 'dashboard' || !['super-tenants', 'super-approvals', 'admin-approvals', 'super-subscriptions', 'super-broadcasts', 'super-showcase', 'super-telemetry', 'super-operators'].includes(activeTab)) && (
+                {(activeTab === 'super-dashboard' || activeTab === 'dashboard' || !['super-tenants', 'super-approvals', 'admin-approvals', 'super-subscriptions', 'super-plans', 'super-reminders'].includes(activeTab)) && (
                   <SuperAdminDashboardView
                     language={language}
                     metrics={platformMetrics}
                     tenants={tenants}
                     applications={applications}
                     transactions={saasTransactions}
-                    telemetryLogs={telemetryLogs}
                     onNavigate={setActiveTab}
                     onImpersonateTenant={handleImpersonateTenant}
-                    onOpenBroadcastModal={() => setActiveTab('super-broadcasts')}
-                    onOpenNewTenantModal={() => {
-                      const newId = `tenant-${Date.now()}`;
-                      const dummyTenant: TenantStore = {
-                        id: newId,
-                        name: 'Kibo Plaza Mini Supermarket',
-                        ownerName: 'Mwajuma Kassim',
-                        ownerEmail: 'mwajuma.k@kiboplaza.co.tz',
-                        ownerPhone: '+255 784 998 112',
-                        region: 'Dar es Salaam',
-                        district: 'Ilala CBD',
-                        type: 'retail',
-                        status: 'active',
-                        plan: 'biashara_pro',
-                        branchesCount: 1,
-                        staffCount: 3,
-                        tinNumber: '144-889-210',
-                        licenseNumber: 'BRELA-TZ-88921',
-                        traEfdDeviceSerial: 'EFD-TZ-2026-991',
-                        monthlyGmvTzs: 14500000,
-                        mrrTzs: 75000,
-                        subscriptionExpiry: '2026-12-31',
-                        lastSyncTime: 'Just now',
-                        storageUsedMb: 120,
-                        createdAt: '2026-08-28',
-                        autoRenew: true,
-                      };
-                      setTenants(prev => [dummyTenant, ...prev]);
-                      setActiveTab('super-tenants');
-                    }}
-                    onOpenAIChat={() => {
-                      setAiInitialPrompt('Analyze Tanzanian SaaS tenant expansion, MRR growth, and TMDA/TRA compliance readiness.');
-                      setIsAIChatOpen(true);
-                    }}
                   />
                 )}
 
@@ -1191,7 +1210,7 @@ export default function DukaPortal() {
                         licenseNumber: 'BRELA-TZ-55412',
                         traEfdDeviceSerial: 'EFD-TZ-2026-784',
                         monthlyGmvTzs: 8200000,
-                        mrrTzs: 45000,
+                        mrrTzs: 39000,
                         subscriptionExpiry: '2026-12-31',
                         lastSyncTime: 'Just now',
                         storageUsedMb: 64,
@@ -1209,6 +1228,7 @@ export default function DukaPortal() {
                     applications={applications}
                     setApplications={setApplications}
                     onImpersonateVendor={handleImpersonateVendor}
+                    onApproved={() => void applyAdminData()}
                   />
                 )}
 
@@ -1219,34 +1239,21 @@ export default function DukaPortal() {
                     setPlans={setSaasPlans}
                     transactions={saasTransactions}
                     setTransactions={setSaasTransactions}
+                    tenants={tenants}
+                    setTenants={setTenants}
                   />
                 )}
 
-                {activeTab === 'super-broadcasts' && (
-                  <SuperAdminBroadcastsView
+                {activeTab === 'super-plans' && (
+                  <SuperAdminPlansView language={language} />
+                )}
+
+                {activeTab === 'super-reminders' && (
+                  <SuperAdminRemindersView
                     language={language}
                     broadcasts={platformBroadcasts}
                     setBroadcasts={setPlatformBroadcasts}
-                  />
-                )}
-
-                {activeTab === 'super-showcase' && (
-                  <SuperAdminShowcaseView language={language} />
-                )}
-
-                {activeTab === 'super-telemetry' && (
-                  <SuperAdminTelemetryView
-                    language={language}
-                    metrics={platformMetrics}
-                    telemetryLogs={telemetryLogs}
-                  />
-                )}
-
-                {activeTab === 'super-operators' && (
-                  <SuperAdminOperatorsView
-                    language={language}
-                    operators={platformOperators}
-                    setOperators={setPlatformOperators}
+                    tenants={tenants}
                   />
                 )}
               </>
@@ -1255,6 +1262,25 @@ export default function DukaPortal() {
             {/* VENDOR / SHOP ADMIN & CASHIER VIEWS */}
             {!isSuperAdminMode && (
               <>
+                {vendorAccessBlocked && (
+                  <div className="mb-4 rounded-2xl border border-rose-300 bg-rose-50 px-4 py-4 text-sm text-rose-900">
+                    <p className="font-bold">
+                      {language === 'sw' ? 'Huduma imezuiwa — malipo yanahitajika' : 'Service blocked — payment required'}
+                    </p>
+                    <p className="text-xs mt-1 text-rose-800">
+                      {language === 'sw'
+                        ? 'Usajili wako umeisha au akaunti imesimamishwa. Lipia ili kuendelea kutumia POS, hesabu na bidhaa.'
+                        : 'Your subscription expired or the account was suspended. Pay to restore POS, inventory, and reports.'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('settings')}
+                      className="mt-3 px-4 py-2 rounded-xl bg-rose-700 text-white text-xs font-bold cursor-pointer"
+                    >
+                      {language === 'sw' ? 'Nenda Malipo & Mpango' : 'Go to Plan & Billing'}
+                    </button>
+                  </div>
+                )}
                 {(activeTab === 'dashboard' || activeTab === 'landing') && (
                   <DashboardView
                     language={language}
@@ -1476,6 +1502,7 @@ export default function DukaPortal() {
                     setCustomers={setCustomers}
                     onCustomersChanged={refreshCustomersFromApi}
                     onOpenAIChatWithPrompt={handleOpenAIChatWithPrompt}
+                    currentUser={currentUser}
                   />
                 )}
 
@@ -1507,6 +1534,7 @@ export default function DukaPortal() {
                     onOpenAIChatWithPrompt={handleOpenAIChatWithPrompt}
                     onReceivePO={handleReceivePO}
                     onProductsChanged={refreshProductsFromApi}
+                    currentUser={currentUser}
                   />
                 )}
 
@@ -1528,6 +1556,7 @@ export default function DukaPortal() {
                     onOpenAIChatWithPrompt={handleOpenAIChatWithPrompt}
                     onReceivePO={handleReceivePO}
                     businessType={businessType}
+                    currentUser={currentUser}
                   />
                 )}
 
@@ -1541,6 +1570,7 @@ export default function DukaPortal() {
                     setPurchaseOrders={setPurchaseOrders}
                     onOpenAIChatWithPrompt={handleOpenAIChatWithPrompt}
                     onNavigateToSuppliers={() => setActiveTab('suppliers')}
+                    currentUser={currentUser}
                   />
                 )}
 
@@ -1551,6 +1581,10 @@ export default function DukaPortal() {
                     setApplications={setApplications}
                     onImpersonateVendor={handleImpersonateVendor}
                   />
+                )}
+
+                {activeTab === 'documents' && (
+                  <DocumentsView language={language} />
                 )}
 
                 {(activeTab === 'profile' || activeTab === 'settings') && (
@@ -1569,6 +1603,8 @@ export default function DukaPortal() {
                     setStaffList={setStaffList}
                     onSwitchToStaffSite={canSwitchStaffWorkstation(currentUser) ? handleSwitchToStaffSite : undefined}
                     onNavigate={setActiveTab}
+                    currentPlanTier={currentPlanTier}
+                    subscriptionExpiry={subscriptionExpiry}
                   />
                 )}
               </>
@@ -1596,6 +1632,7 @@ export default function DukaPortal() {
         onRegisterSubmit={handleRegisterSubmit}
       />
     </div>
+    </DocumentTemplateProvider>
     </TaxComplianceProvider>
   );
 }

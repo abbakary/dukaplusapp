@@ -4,7 +4,7 @@
  */
 
 import type { CartItem, Customer, PaymentBreakdown, PaymentMethod, Product, SaleTransaction } from '@/types/v1';
-import { calculateSaleTotals } from '@/lib/taxComplianceSettings';
+import { calculateSaleTotals, computeDiscountedSubtotal } from '@/lib/taxComplianceSettings';
 import type { TaxComplianceSettings } from '@/lib/taxComplianceSettings';
 
 export type TransactionLifecycleStatus =
@@ -187,7 +187,14 @@ export function buildSaleFromCart(params: BuildSaleParams): SaleTransaction {
   } = params;
 
   const clientId = params.clientTransactionId ?? generateClientTransactionId();
-  const subtotal = cart.reduce((s, i) => s + i.product.price * i.quantity, 0);
+  const { subtotal, discountAmount } = computeDiscountedSubtotal(
+    cart.map(i => ({
+      unitPrice: i.product.price,
+      quantity: i.quantity,
+      discountPercent: i.discountPercent,
+    })),
+    taxSettings,
+  );
   const saleTotals = calculateSaleTotals({ subtotal, discountPercent: 0 }, taxSettings);
   const total = saleTotals.total;
   const actualPaid =
@@ -222,14 +229,20 @@ export function buildSaleFromCart(params: BuildSaleParams): SaleTransaction {
     date: new Date().toISOString().replace('T', ' ').slice(0, 16),
     customerId: customer?.id,
     customerName: customer?.name || (isSw ? 'Mteja wa Taslimu (Walk-in)' : 'Walk-in Customer'),
-    items: cart.map(i => ({
-      productId: i.product.id,
-      productName: i.product.name,
-      quantity: i.quantity,
-      unitPrice: i.product.price,
-      total: i.product.price * i.quantity,
-    })),
+    items: cart.map(i => {
+      const lineGross = i.product.price * i.quantity;
+      const pct = taxSettings.discountEnabled ? i.discountPercent : 0;
+      const lineTotal = Math.round(lineGross * (1 - pct / 100));
+      return {
+        productId: i.product.id,
+        productName: i.product.name,
+        quantity: i.quantity,
+        unitPrice: i.product.price,
+        total: lineTotal,
+      };
+    }),
     subtotal: saleTotals.subtotal,
+    discountAmount,
     vatAmount: saleTotals.vatAmount,
     total,
     paidAmount: actualPaid,

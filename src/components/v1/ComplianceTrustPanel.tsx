@@ -173,6 +173,28 @@ export const ComplianceTrustPanel: React.FC<ComplianceTrustPanelProps> = ({
               />
             </div>
           )}
+
+          <label className="flex items-center gap-2 text-xs font-semibold text-[#323130]">
+            <input
+              type="checkbox"
+              checked={draft.showDiscountOnReceipts}
+              onChange={e => patch({ showDiscountOnReceipts: e.target.checked })}
+              disabled={!draft.discountEnabled}
+              className="rounded text-[#0078D4] disabled:opacity-40"
+            />
+            {isSw ? 'Onyesha punguzo kwenye risiti za POS' : 'Show discount on POS receipts'}
+          </label>
+
+          <label className="flex items-center gap-2 text-xs font-semibold text-[#323130]">
+            <input
+              type="checkbox"
+              checked={draft.showDiscountOnDocuments}
+              onChange={e => patch({ showDiscountOnDocuments: e.target.checked })}
+              disabled={!draft.discountEnabled}
+              className="rounded text-[#0078D4] disabled:opacity-40"
+            />
+            {isSw ? 'Onyesha punguzo kwenye ankara & noti' : 'Show discount on invoices & notes'}
+          </label>
         </div>
 
         <div className="bg-white rounded-xl border border-[#E1DFDD] p-5 shadow-xs space-y-4">

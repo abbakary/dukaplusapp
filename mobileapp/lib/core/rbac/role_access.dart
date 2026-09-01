@@ -22,6 +22,7 @@ class RoleAccess {
   bool get canSeeInventory => isOwner || isManager || isStorekeeper || isPharmacist || p.canModifyInventory;
   bool get canSeeSuppliers => isOwner || isManager || isStorekeeper || isAccountant || p.canManageSuppliers;
   bool get canSeeReports => isOwner || isManager || isAccountant || p.canViewProfitReports;
+  bool get canSeeDocuments => isOwner || isManager || isAccountant;
   bool get canSeeBI => isOwner || isManager || isAccountant;
   bool get canSeeBranches => isOwner || isManager;
   bool get canSeeExpenses => isOwner || isManager || isAccountant;
@@ -45,6 +46,7 @@ class RoleAccess {
     if (path.startsWith('/customers')) return canSeeCustomers;
     if (path.startsWith('/suppliers')) return canSeeSuppliers;
     if (path.startsWith('/reports')) return canSeeReports;
+    if (path.startsWith('/documents')) return canSeeDocuments;
     if (path.startsWith('/bi')) return canSeeBI;
     if (path.startsWith('/branches')) return canSeeBranches;
     if (path.startsWith('/expenses')) return canSeeExpenses;
@@ -122,6 +124,13 @@ List<AppNavItem> allNavItems = [
     icon: Icons.bar_chart_outlined,
     visible: (a) => a.canSeeReports,
     showInBottomNav: true,
+  ),
+  AppNavItem(
+    path: '/documents',
+    labelKey: 'documents',
+    activeIcon: Icons.description_rounded,
+    icon: Icons.description_outlined,
+    visible: (a) => a.canSeeDocuments,
   ),
   AppNavItem(
     path: '/bi',

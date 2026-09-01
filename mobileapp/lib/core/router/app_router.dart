@@ -13,13 +13,16 @@ import '../../screens/reports/reports_screen.dart';
 import '../../screens/branches/branches_screen.dart';
 import '../../screens/expenses/expenses_screen.dart';
 import '../../screens/settings/settings_screen.dart';
+import '../../screens/settings/document_templates_screen.dart';
 import '../../widgets/main_shell.dart';
 import '../../providers/permissions_provider.dart';
 import '../../screens/welcome/welcome_screen.dart';
 import '../../screens/credit/receivables_payables_screen.dart';
 import '../../widgets/stipend_claim_banner.dart';
 import '../../screens/pending/pending_transactions_screen.dart';
+import '../../screens/legal/terms_of_service_screen.dart';
 import '../../providers/locale_provider.dart';
+import '../../widgets/app_brand_logo.dart';
 import '../../screens/bi/bi_analytics_screen.dart';
 
 final _rootNavigatorKey  = GlobalKey<NavigatorState>();
@@ -40,7 +43,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (isInitialising) return '/splash';
 
       final loc     = state.matchedLocation;
-      final isOnAuth = loc == '/login' || loc == '/register' || loc == '/splash' || loc == '/welcome';
+      final isOnAuth = loc == '/login' || loc == '/register' || loc == '/splash' || loc == '/welcome' || loc == '/terms';
 
       if (!isAuthenticated && !isOnAuth) return '/welcome';
 
@@ -61,6 +64,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // ── Public ────────────────────────────────────────────────────────
       GoRoute(path: '/welcome',  builder: (_, __) => const WelcomeScreen()),
+      GoRoute(path: '/terms',    builder: (_, __) => const TermsOfServiceScreen()),
       GoRoute(path: '/login',    builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
 
@@ -76,12 +80,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/suppliers', builder: (_, __) => const SuppliersScreen()),
           GoRoute(path: '/credit',   builder: (_, __) => const ReceivablesPayablesScreen()),
           GoRoute(path: '/reports',   builder: (_, __) => const ReportsScreen()),
+          GoRoute(path: '/documents', builder: (_, __) => const DocumentTemplatesScreen()),
           GoRoute(path: '/bi',        builder: (_, __) => const BiAnalyticsScreen()),
           GoRoute(path: '/branches',  builder: (_, __) => const BranchesScreen()),
           GoRoute(path: '/expenses',  builder: (_, __) => const ExpensesScreen()),
           GoRoute(path: '/my-stipend', builder: (_, __) => const MyStipendScreen()),
           GoRoute(path: '/pending',   builder: (_, __) => const PendingTransactionsScreen()),
           GoRoute(path: '/settings',  builder: (_, __) => const SettingsScreen()),
+          GoRoute(path: '/settings/documents', builder: (_, __) => const DocumentTemplatesScreen()),
         ],
       ),
     ],
@@ -112,7 +118,7 @@ class _SplashScreen extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const _LogoBadge(),
+              const AppBrandLogo(height: 52, width: 220, showShadow: true),
               const SizedBox(height: 32),
               const SizedBox(
                 width: 24, height: 24,
@@ -142,32 +148,3 @@ class _SplashScreen extends ConsumerWidget {
   }
 }
 
-class _LogoBadge extends StatelessWidget {
-  const _LogoBadge();
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: 90, height: 90,
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(26),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withAlpha(50),
-          blurRadius: 24,
-          offset: const Offset(0, 8),
-        ),
-      ],
-    ),
-    child: const Center(
-      child: Text(
-        'D+',
-        style: TextStyle(
-          fontSize: 34,
-          fontWeight: FontWeight.w800,
-          color: Color(0xFF1A3A6B),
-        ),
-      ),
-    ),
-  );
-}

@@ -18,6 +18,7 @@ import '../../providers/api_provider.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/gradient_app_bar.dart';
 import '../../widgets/shimmer_loader.dart';
+import '../../widgets/shell_insets.dart';
 import '../../providers/locale_provider.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -121,10 +122,12 @@ class PendingTransactionsScreen extends ConsumerWidget {
           },
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.go('/pos'),
-        icon: const Icon(Icons.point_of_sale_rounded),
-        label: Text(l10n.openPos),
+      floatingActionButton: ShellFab(
+        child: FloatingActionButton.extended(
+          onPressed: () => context.go('/pos'),
+          icon: const Icon(Icons.point_of_sale_rounded),
+          label: Text(l10n.openPos),
+        ),
       ),
     );
   }

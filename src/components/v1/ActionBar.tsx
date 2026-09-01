@@ -1,31 +1,19 @@
 import React from 'react';
-import { 
-  Plus, 
-  Pencil, 
-  Eye, 
-  Trash2, 
-  Copy, 
-  Download, 
-  Sparkles,
-  RefreshCw,
-  SlidersHorizontal
-} from 'lucide-react';
+import { Download, Filter, Plus, Sparkles } from 'lucide-react';
 import { Language } from '@/types/v1';
-import { getTranslation } from '@/utils/translations';
 
 interface ActionBarProps {
   language: Language;
   onAdd?: () => void;
   onEdit?: () => void;
   onView?: () => void;
-  onDelete?: () => void;
-  onCopy?: () => void;
   onExport?: () => void;
   onAISuggest?: () => void;
+  onFilter?: () => void;
   customAddLabel?: string;
-  selectedCount?: number;
+  exportLabel?: string;
   totalCount?: number;
-  lastUpdatedText?: string;
+  showExport?: boolean;
 }
 
 export const ActionBar: React.FC<ActionBarProps> = ({
@@ -33,122 +21,66 @@ export const ActionBar: React.FC<ActionBarProps> = ({
   onAdd,
   onEdit,
   onView,
-  onDelete,
-  onCopy,
   onExport,
   onAISuggest,
+  onFilter,
   customAddLabel,
-  selectedCount = 0,
-  totalCount = 342,
-  lastUpdatedText = 'Today, 14:30',
+  exportLabel,
+  totalCount,
+  showExport = true,
 }) => {
-  const t = (key: any) => getTranslation(language, key);
+  const isSw = language === 'sw';
 
   return (
-    <div className="w-full bg-white border border-[#E1DFDD] rounded-xl p-3 shadow-xs space-y-2">
-      {/* 12-Column Responsive Full-Width Action Button Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-7 gap-2">
-        {/* ADD / PRIMARY */}
-        <button
-          id="action-btn-add"
-          onClick={onAdd}
-          className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[#6264A7] hover:bg-[#555793] text-white font-semibold text-xs transition-all active:scale-[0.98] shadow-xs cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>{customAddLabel || t('add')}</span>
-        </button>
-
-        {/* EDIT */}
-        <button
-          id="action-btn-edit"
-          onClick={onEdit}
-          disabled={selectedCount === 0}
-          className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border font-medium text-xs transition-all ${
-            selectedCount > 0
-              ? 'bg-white hover:bg-[#F3F2F1] text-[#323130] border-[#C8C6C4] shadow-xs active:scale-[0.98] cursor-pointer'
-              : 'bg-[#F3F2F1] text-[#A19F9D] border-[#EDEBE9] cursor-not-allowed'
-          }`}
-        >
-          <Pencil className="w-3.5 h-3.5 text-[#0078D4]" />
-          <span>{t('edit')}</span>
-        </button>
-
-        {/* VIEW */}
-        <button
-          id="action-btn-view"
-          onClick={onView}
-          disabled={selectedCount === 0}
-          className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border font-medium text-xs transition-all ${
-            selectedCount > 0
-              ? 'bg-white hover:bg-[#F3F2F1] text-[#323130] border-[#C8C6C4] shadow-xs active:scale-[0.98] cursor-pointer'
-              : 'bg-[#F3F2F1] text-[#A19F9D] border-[#EDEBE9] cursor-not-allowed'
-          }`}
-        >
-          <Eye className="w-3.5 h-3.5 text-[#6264A7]" />
-          <span>{t('view')}</span>
-        </button>
-
-        {/* DELETE */}
-        <button
-          id="action-btn-delete"
-          onClick={onDelete}
-          disabled={selectedCount === 0}
-          className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border font-medium text-xs transition-all ${
-            selectedCount > 0
-              ? 'bg-white hover:bg-rose-50 text-[#D13438] border-rose-200 shadow-xs active:scale-[0.98] cursor-pointer'
-              : 'bg-[#F3F2F1] text-[#A19F9D] border-[#EDEBE9] cursor-not-allowed'
-          }`}
-        >
-          <Trash2 className="w-3.5 h-3.5 text-[#D13438]" />
-          <span>{t('delete')}</span>
-        </button>
-
-        {/* COPY */}
-        <button
-          id="action-btn-copy"
-          onClick={onCopy}
-          disabled={selectedCount === 0}
-          className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border font-medium text-xs transition-all ${
-            selectedCount > 0
-              ? 'bg-white hover:bg-[#F3F2F1] text-[#323130] border-[#C8C6C4] shadow-xs active:scale-[0.98] cursor-pointer'
-              : 'bg-[#F3F2F1] text-[#A19F9D] border-[#EDEBE9] cursor-not-allowed'
-          }`}
-        >
-          <Copy className="w-3.5 h-3.5 text-[#605E5C]" />
-          <span>{t('copy')}</span>
-        </button>
-
-        {/* EXPORT */}
-        <button
-          id="action-btn-export"
-          onClick={onExport}
-          className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-white hover:bg-[#F3F2F1] text-[#323130] border border-[#C8C6C4] font-medium text-xs shadow-xs active:scale-[0.98] transition-all cursor-pointer"
-        >
-          <Download className="w-3.5 h-3.5 text-[#107C10]" />
-          <span>{t('export')}</span>
-        </button>
-
-        {/* AI INSIGHTS */}
-        <button
-          id="action-btn-ai"
-          onClick={onAISuggest}
-          className="col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-gradient-to-r from-[#0078D4] to-[#6264A7] hover:brightness-105 text-white font-semibold text-xs shadow-xs active:scale-[0.98] transition-all cursor-pointer"
-        >
-          <Sparkles className="w-3.5 h-3.5 text-amber-200" />
-          <span>{t('aiSuggest')}</span>
-        </button>
+    <div className="flex flex-wrap items-center justify-between gap-3 py-3 px-1 border-t border-[#EDEBE9] mt-4">
+      <div className="flex flex-wrap items-center gap-2">
+        {onAdd && (
+          <button
+            type="button"
+            onClick={onAdd}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#0d9488] hover:bg-[#0f766e] text-white text-xs font-bold cursor-pointer transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            {customAddLabel ?? (isSw ? 'Ongeza' : 'Add')}
+          </button>
+        )}
+        {onEdit && (
+          <button type="button" onClick={onEdit} className="px-3 py-2 rounded-xl border border-[#E1DFDD] text-xs font-semibold text-[#323130] hover:bg-[#F3F2F1] cursor-pointer">
+            {isSw ? 'Hariri' : 'Edit'}
+          </button>
+        )}
+        {onView && (
+          <button type="button" onClick={onView} className="px-3 py-2 rounded-xl border border-[#E1DFDD] text-xs font-semibold text-[#323130] hover:bg-[#F3F2F1] cursor-pointer">
+            {isSw ? 'Angalia' : 'View'}
+          </button>
+        )}
+        {onFilter && (
+          <button type="button" onClick={onFilter} className="inline-flex items-center gap-1 px-3 py-2 rounded-xl border border-[#E1DFDD] text-xs font-semibold cursor-pointer hover:bg-[#F3F2F1]">
+            <Filter className="w-3.5 h-3.5" /> {isSw ? 'Chuja' : 'Filter'}
+          </button>
+        )}
+        {onAISuggest && (
+          <button type="button" onClick={onAISuggest} className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold cursor-pointer">
+            <Sparkles className="w-3.5 h-3.5" /> AI
+          </button>
+        )}
       </div>
-
-      {/* Status Bar */}
-      <div className="flex items-center justify-between text-[11px] text-[#605E5C] pt-1 px-1 border-t border-[#F3F2F1]">
-        <div>
-          {selectedCount > 0 ? (
-            <span className="font-semibold text-[#0078D4]">{selectedCount} item(s) selected</span>
-          ) : (
-            <span>Showing active records (Total: {totalCount})</span>
-          )}
-        </div>
-        <div>Last updated: {lastUpdatedText}</div>
+      <div className="flex items-center gap-2">
+        {totalCount != null && (
+          <span className="text-[11px] text-[#605E5C] font-medium">
+            {totalCount} {isSw ? 'rekodi' : 'records'}
+          </span>
+        )}
+        {showExport && onExport && (
+          <button
+            type="button"
+            onClick={onExport}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border-2 border-[#0d9488] text-[#0d9488] hover:bg-teal-50 text-xs font-bold cursor-pointer transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            {exportLabel ?? (isSw ? 'Pakua PDF' : 'Export PDF')}
+          </button>
+        )}
       </div>
     </div>
   );

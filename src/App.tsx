@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import DukaPortal from '@/pages/DukaPortal';
+import { SaasPlansProvider } from '@/context/SaasPlansContext';
 import { useOfflineStore } from '@/stores';
 import { useEffect } from 'react';
 
@@ -26,7 +27,7 @@ export default function App() {
       <BrowserRouter>
         <OfflineListener />
         <Routes>
-          <Route path="/*" element={<DukaPortal />} />
+          <Route path="/*" element={<SaasPlansProvider><DukaPortal /></SaasPlansProvider>} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>

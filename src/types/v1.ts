@@ -149,6 +149,7 @@ export interface SaleTransaction {
     totalPrice?: number;
   }[];
   subtotal: number;
+  discountAmount?: number;
   vatAmount: number; // 18% TRA VAT
   total: number;
   paidAmount: number;
@@ -524,6 +525,8 @@ export interface AuthUser {
   licenseNumber?: string;
   location?: string;
   logoUrl?: string;
+  plan?: SaaSPlanTier;
+  subscriptionExpiry?: string;
 }
 
 export type SaaSPlanTier = 'free_starter' | 'biashara_pro' | 'enterprise_chain';

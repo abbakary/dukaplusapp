@@ -7,6 +7,8 @@ export interface TaxComplianceSettings {
   pricesIncludeVat: boolean;
   discountEnabled: boolean;
   maxDiscountPercent: number;
+  showDiscountOnReceipts: boolean;
+  showDiscountOnDocuments: boolean;
   showVatOnReceipt: boolean;
   showTraSignature: boolean;
   traEfdSerial: string;
@@ -23,6 +25,8 @@ export const DEFAULT_TAX_COMPLIANCE_SETTINGS: TaxComplianceSettings = {
   pricesIncludeVat: false,
   discountEnabled: true,
   maxDiscountPercent: 15,
+  showDiscountOnReceipts: true,
+  showDiscountOnDocuments: true,
   showVatOnReceipt: true,
   showTraSignature: false,
   traEfdSerial: '',
@@ -133,4 +137,35 @@ export function getComplianceStatusLabel(settings: TaxComplianceSettings, isSw: 
 
 export function getComplianceBadgeTone(settings: TaxComplianceSettings): 'tra' | 'manual' {
   return settings.mode === 'tra_efd' ? 'tra' : 'manual';
+}
+
+/** Cap per-line or cart discount according to tenant settings. */
+export function capDiscountPercent(
+  discountPercent: number,
+  settings: TaxComplianceSettings,
+): number {
+  if (!settings.discountEnabled) return 0;
+  return Math.min(Math.max(discountPercent, 0), settings.maxDiscountPercent);
+}
+
+export interface LineDiscountInput {
+  unitPrice: number;
+  quantity: number;
+  discountPercent?: number;
+}
+
+/** Subtotal after per-line discounts (respects discountEnabled + max cap). */
+export function computeDiscountedSubtotal(
+  lines: LineDiscountInput[],
+  settings: TaxComplianceSettings,
+): { subtotal: number; discountAmount: number; grossSubtotal: number } {
+  let grossSubtotal = 0;
+  let subtotal = 0;
+  for (const line of lines) {
+    const gross = line.unitPrice * line.quantity;
+    grossSubtotal += gross;
+    const pct = capDiscountPercent(line.discountPercent ?? 0, settings);
+    subtotal += Math.round(gross * (1 - pct / 100));
+  }
+  return { subtotal, discountAmount: grossSubtotal - subtotal, grossSubtotal };
 }

@@ -240,6 +240,84 @@ class ApiClient {
     return res.data as List<dynamic>;
   }
 
+  // ── AI ─────────────────────────────────────────────────────────────
+  Future<Map<String, dynamic>> aiChat({
+    required String message,
+    required String language,
+    Map<String, dynamic>? shopContext,
+    List<Map<String, dynamic>>? history,
+  }) async {
+    final res = await _dio.post('/ai/chat', data: {
+      'message': message,
+      'language': language,
+      'shopContext': shopContext ?? {},
+      'history': history ?? [],
+    });
+    return Map<String, dynamic>.from(res.data as Map);
+  }
+
+  Future<Map<String, dynamic>> aiSmartSchedule({
+    required String language,
+    String staffName = '',
+    String role = '',
+    String businessType = 'retail',
+    List<Map<String, dynamic>>? existingEvents,
+  }) async {
+    final res = await _dio.post('/ai/smart-schedule', data: {
+      'language': language,
+      'staffName': staffName,
+      'role': role,
+      'businessType': businessType,
+      'existingEvents': existingEvents ?? [],
+    });
+    return Map<String, dynamic>.from(res.data as Map);
+  }
+
+  Future<Map<String, dynamic>> aiCrossMatrix({
+    required String language,
+    List<Map<String, dynamic>>? locationSummary,
+    List<Map<String, dynamic>>? customerTopPurchases,
+    List<Map<String, dynamic>>? stagnantItems,
+    String selectedLocation = 'all',
+    String selectedCustomer = 'all',
+  }) async {
+    final res = await _dio.post('/ai/cross-matrix-analysis', data: {
+      'language': language,
+      'locationSummary': locationSummary ?? [],
+      'customerTopPurchases': customerTopPurchases ?? [],
+      'stagnantItems': stagnantItems ?? [],
+      'selectedLocation': selectedLocation,
+      'selectedCustomer': selectedCustomer,
+    });
+    return Map<String, dynamic>.from(res.data as Map);
+  }
+
+  // ── Tenant settings & documents ───────────────────────────────────
+  Future<Map<String, dynamic>> getTenantSettings() async {
+    final res = await _dio.get('/tenant/settings');
+    return Map<String, dynamic>.from(res.data as Map);
+  }
+
+  Future<Map<String, dynamic>> updateTenantSettings(Map<String, dynamic> data) async {
+    final res = await _dio.put('/tenant/settings', data: data);
+    return Map<String, dynamic>.from(res.data as Map);
+  }
+
+  Future<Map<String, dynamic>> uploadDocumentLogo(String imageBase64) async {
+    final res = await _dio.post('/tenant/settings/logo', data: {'image_base64': imageBase64});
+    return Map<String, dynamic>.from(res.data as Map);
+  }
+
+  Future<Map<String, dynamic>> removeDocumentLogo() async {
+    final res = await _dio.delete('/tenant/settings/logo');
+    return Map<String, dynamic>.from(res.data as Map);
+  }
+
+  Future<Map<String, dynamic>> getDocumentCatalog() async {
+    final res = await _dio.get('/tenant/documents/catalog');
+    return Map<String, dynamic>.from(res.data as Map);
+  }
+
   // ── Token helpers ─────────────────────────────────────────────────
   static Future<void> saveTokens(String access, String refresh) async {
     await _storage.write(key: AppConstants.kAccessToken,  value: access);

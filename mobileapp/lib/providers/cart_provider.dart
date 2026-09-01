@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/cart_model.dart';
 import '../data/models/product_model.dart';
+import '../core/config/business_settings.dart';
+import 'business_settings_provider.dart';
 
 /// CartNotifier — fine-grained Riverpod StateNotifier
 /// Only widgets that call ref.watch(cartProvider.select(...)) rebuild.
@@ -53,6 +55,23 @@ final cartTotalProvider = Provider<double>(
 final cartIsEmptyProvider = Provider<bool>(
   (ref) => ref.watch(cartProvider.select((s) => s.isEmpty)),
 );
+
+final cartTotalsProvider = Provider<CartTotals>((ref) {
+  final cart = ref.watch(cartProvider);
+  final settings = ref.watch(businessSettingsProvider);
+  var gross = 0.0;
+  var net = 0.0;
+  for (final item in cart.items) {
+    gross += item.originalTotal;
+    final pct = settings.capDiscount(item.discountPercent);
+    net += item.originalTotal * (1 - pct / 100);
+  }
+  return computeCartTotals(
+    grossSubtotal: gross,
+    discountedSubtotal: net,
+    settings: settings,
+  );
+});
 
 /// Product queued from inventory → POS (sell action).
 final posPendingProductProvider = StateProvider<Product?>((ref) => null);

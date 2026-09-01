@@ -7,6 +7,7 @@ import {
   ClipboardList,
   Truck,
   FileSignature,
+  FileText,
   Users,
   Wallet,
   Receipt,
@@ -29,6 +30,7 @@ import { BusinessType, Language, UserRole, AuthUser, StaffRole } from '@/types/v
 import { getTranslation } from '@/utils/translations';
 import { getWorkplace } from '@/lib/businessProfiles';
 import { canClaimOwnDailyStipend } from '@/lib/rbac';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 
 interface SidebarProps {
   currentView?: string;
@@ -64,19 +66,7 @@ type NavItemDef = {
 };
 
 function DukaLogo() {
-  return (
-    <div className="flex items-center gap-2.5">
-      <div className="grid grid-cols-2 gap-0.5 w-8 h-8 shrink-0">
-        <span className="rounded-sm bg-[#f97316]" />
-        <span className="rounded-sm bg-[#3b82f6]" />
-        <span className="rounded-sm bg-[#22c55e]" />
-        <span className="rounded-sm bg-[#eab308]" />
-      </div>
-      <span className="text-[1.35rem] font-bold tracking-tight text-white lowercase">
-        duka<span className="text-[#f97316]">+</span>
-      </span>
-    </div>
-  );
+  return <BrandLogo height={36} className="max-w-[10rem]" />;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -133,6 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const canSeeExpenses = isOwner || isManager || isAccountant;
   const canSeePredictive = isOwner || isManager || isStorekeeper || isPharmacist;
   const canSeeReports = isOwner || isManager || isAccountant;
+  const canSeeDocuments = isOwner || isManager || isAccountant;
   const canSeeCalendar = isOwner || isManager || isPharmacist || isStorekeeper;
   const canSeeAccountSettings = isOwner;
 
@@ -249,6 +240,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const moreNav: NavItemDef[] = useMemo(
     () => [
       {
+        id: 'documents',
+        labelEn: 'Documents',
+        labelSw: 'Hati',
+        icon: FileText,
+        activeWhen: v => v === 'documents',
+        visible: canSeeDocuments,
+      },
+      {
         id: 'pending-transactions',
         labelEn: 'Uncompleted Sales',
         labelSw: 'Mauzo Yasiyokamilika',
@@ -318,6 +317,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     [
       canSeePOS,
       canSeeBI,
+      canSeeDocuments,
       canSeePredictive,
       canSeeBranches,
       canSeeCalendar,

@@ -10,6 +10,7 @@ import '../../data/models/sale_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/utils/product_qr.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/business_settings_provider.dart';
 import '../../providers/products_provider.dart';
 import '../../providers/sales_provider.dart';
 import '../../providers/customers_provider.dart';
@@ -23,6 +24,7 @@ import '../../widgets/shimmer_loader.dart';
 import '../../widgets/search_bar_widget.dart';
 import '../../widgets/drawer_menu_button.dart';
 import '../../widgets/stipend_claim_banner.dart';
+import '../../widgets/ai_assistant_fab.dart';
 
 Future<void> _openPaymentSheet(BuildContext context) async {
   final sale = await showModalBottomSheet<SaleTransaction?>(
@@ -443,6 +445,7 @@ class _PosAppBar extends ConsumerWidget implements PreferredSizeWidget {
             ],
           ),
           actions: [
+            AiAppBarButton(),
             IconButton(
               icon: const Icon(Icons.qr_code_scanner_rounded,
                   color: Colors.white, size: 22),
@@ -657,6 +660,7 @@ class _CartBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cart = ref.watch(cartProvider);
+    final totals = ref.watch(cartTotalsProvider);
     final l10n = ref.watch(appLocalizationsProvider);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -713,7 +717,7 @@ class _CartBar extends ConsumerWidget {
                     style: const TextStyle(
                         fontSize: 10, color: AppColors.textSecondary),
                   ),
-                  Text(AppFormatters.tsh(cart.total),
+                  Text(AppFormatters.tsh(totals.total),
                       style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
@@ -769,9 +773,13 @@ class _CartSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = ref.watch(appLocalizationsProvider);
     final cart    = ref.watch(cartProvider);
+    final totals  = ref.watch(cartTotalsProvider);
+    final settings = ref.watch(businessSettingsProvider);
     final primary = Theme.of(context).colorScheme.primary;
     final mq      = MediaQuery.of(context);
-    final sheetH  = mq.size.height * 0.72;
+    final compact = mq.size.height < 560;
+    final sheetH  = (mq.size.height * (compact ? 0.88 : 0.72))
+        .clamp(280.0, mq.size.height * 0.92);
 
     return Container(
       height: sheetH,
@@ -785,7 +793,7 @@ class _CartSheet extends ConsumerWidget {
           const _Handle(),
           // ── Header ────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(18, 10, 18, 6),
+            padding: EdgeInsets.fromLTRB(18, compact ? 6 : 10, 18, compact ? 4 : 6),
             child: Row(
               children: [
                 Text(l10n.orderSummary,
@@ -833,87 +841,108 @@ class _CartSheet extends ConsumerWidget {
                   ),
           ),
 
-          if (!cart.isEmpty) ...[
-            const Divider(height: 1),
-            // ── Totals ─────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 10, 18, 6),
-              child: Column(
-                children: [
-                  _TRow(l10n.subtotal, AppFormatters.tsh(cart.subtotal)),
-                  const SizedBox(height: 3),
-                  _TRow(l10n.vat18, AppFormatters.tsh(cart.vatAmount)),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 6),
-                    child: Divider(height: 1),
-                  ),
-                  _TRow(
-                    l10n.total,
-                    AppFormatters.tsh(cart.total),
-                    bold: true,
-                    valueColor: primary,
-                    fontSize: 15,
-                  ),
-                ],
-              ),
-            ),
-            // ── Actions ────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => _showCustomerPicker(context, ref),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          if (!cart.isEmpty)
+            Flexible(
+              fit: FlexFit.loose,
+              child: SingleChildScrollView(
+                padding: EdgeInsets.zero,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Divider(height: 1),
+                    // ── Totals ─────────────────────────────────────
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(18, compact ? 8 : 10, 18, compact ? 4 : 6),
+                      child: Column(
+                        children: [
+                          if (settings.discountEnabled &&
+                              settings.showDiscountOnReceipts &&
+                              totals.discountAmount > 0) ...[
+                            _TRow(l10n.grossSubtotal, AppFormatters.tsh(totals.grossSubtotal)),
+                            _TRow(l10n.discount, '- ${AppFormatters.tsh(totals.discountAmount)}',
+                                valueColor: AppColors.warning),
+                          ],
+                          _TRow(l10n.subtotal, AppFormatters.tsh(totals.subtotal)),
+                          const SizedBox(height: 3),
+                          _TRow(l10n.vat18, AppFormatters.tsh(totals.vatAmount)),
+                          Padding(
+                            padding: EdgeInsets.symmetric(vertical: compact ? 4 : 6),
+                            child: const Divider(height: 1),
                           ),
-                          icon: const Icon(Icons.person_add_outlined, size: 16),
-                          label: Text(
-                            cart.hasCustomer
-                                ? cart.customerName!
-                                : l10n.genericCustomer,
-                            style: const TextStyle(fontSize: 12),
-                            overflow: TextOverflow.ellipsis,
+                          _TRow(
+                            l10n.total,
+                            AppFormatters.tsh(totals.total),
+                            bold: true,
+                            valueColor: primary,
+                            fontSize: compact ? 14 : 15,
                           ),
-                        ),
+                        ],
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        flex: 2,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            _openPaymentSheet(context);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          icon: const Icon(Icons.payment_rounded, size: 16),
-                          label: Text(l10n.payNow,
-                              style: const TextStyle(fontSize: 12)),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () => _saveAndNext(context, ref),
-                      icon: const Icon(Icons.save_outlined, size: 16),
-                      label: Text(l10n.saveAndNext,
-                          style: const TextStyle(fontSize: 12)),
                     ),
-                  ),
-                ],
+                    // ── Actions ────────────────────────────────────
+                    SafeArea(
+                      top: false,
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(16, 0, 16, compact ? 8 : 12),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () => _showCustomerPicker(context, ref),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: EdgeInsets.symmetric(vertical: compact ? 8 : 10),
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                    icon: Icon(Icons.person_add_outlined, size: compact ? 14 : 16),
+                                    label: Text(
+                                      cart.hasCustomer
+                                          ? cart.customerName!
+                                          : l10n.genericCustomer,
+                                      style: TextStyle(fontSize: compact ? 11 : 12),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  flex: 2,
+                                  child: ElevatedButton.icon(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      _openPaymentSheet(context);
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      padding: EdgeInsets.symmetric(vertical: compact ? 8 : 10),
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                    icon: Icon(Icons.payment_rounded, size: compact ? 14 : 16),
+                                    label: Text(l10n.payNow,
+                                        style: TextStyle(fontSize: compact ? 11 : 12)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: compact ? 6 : 8),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: () => _saveAndNext(context, ref),
+                                icon: Icon(Icons.save_outlined, size: compact ? 14 : 16),
+                                label: Text(l10n.saveAndNext,
+                                    style: TextStyle(fontSize: compact ? 11 : 12)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
         ],
       ),
     );
@@ -930,12 +959,16 @@ class _CartItemRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(cartProvider.notifier);
+    final settings = ref.watch(businessSettingsProvider);
     final primary  = Theme.of(context).colorScheme.primary;
+    final l10n     = ref.watch(appLocalizationsProvider);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      child: Row(
+      child: Column(
         children: [
+          Row(
+            children: [
           // Icon
           Container(
             width: 36, height: 36,
@@ -991,11 +1024,40 @@ class _CartItemRow extends ConsumerWidget {
           // Line total
           SizedBox(
             width: 68,
-            child: Text(AppFormatters.tsh(item.lineTotal),
+            child: Text(
+                AppFormatters.tsh(settings.discountEnabled ? item.lineTotal : item.originalTotal),
                 textAlign: TextAlign.right,
                 style: const TextStyle(
                     fontSize: 12, fontWeight: FontWeight.w700)),
           ),
+            ],
+          ),
+          if (settings.discountEnabled) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Text(l10n.discountPercent,
+                    style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                const Spacer(),
+                Wrap(
+                  spacing: 4,
+                  children: [
+                    for (final pct in ([0, 5, 10, settings.maxDiscountPercent.round()]
+                          ..sort()))
+                      ChoiceChip(
+                        label: Text('$pct%', style: const TextStyle(fontSize: 10)),
+                        selected: item.discountPercent.round() == pct,
+                        onSelected: (_) => notifier.updateDiscount(
+                          item.product.id,
+                          settings.capDiscount(pct.toDouble()),
+                        ),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -1078,6 +1140,7 @@ class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
 
   Future<void> _completeSale() async {
     final cart = ref.read(cartProvider);
+    final totals = ref.read(cartTotalsProvider);
     final user = ref.read(currentUserProvider);
     final l10n = ref.read(appLocalizationsProvider);
     if (user == null || cart.isEmpty) return;
@@ -1086,7 +1149,7 @@ class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
     try {
       final tendered =
           double.tryParse(_amtCtrl.text.replaceAll(',', '')) ??
-              cart.total;
+              totals.total;
       final resume = ref.read(posResumeProvider);
       SaleTransaction? completedSale;
 
@@ -1149,11 +1212,12 @@ class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
   Widget build(BuildContext context) {
     final l10n = ref.watch(appLocalizationsProvider);
     final cart    = ref.watch(cartProvider);
+    final totals  = ref.watch(cartTotalsProvider);
     final primary = Theme.of(context).colorScheme.primary;
     final mq      = MediaQuery.of(context);
     final tendered =
-        double.tryParse(_amtCtrl.text.replaceAll(',', '')) ?? cart.total;
-    final change   = tendered - cart.total;
+        double.tryParse(_amtCtrl.text.replaceAll(',', '')) ?? totals.total;
+    final change   = tendered - totals.total;
 
     return Container(
       // Fixed height — no overflow
@@ -1179,7 +1243,7 @@ class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
                       Text(l10n.payment,
                           style: const TextStyle(
                               fontSize: 17, fontWeight: FontWeight.w700)),
-                      Text(AppFormatters.tsh(cart.total),
+                      Text(AppFormatters.tsh(totals.total),
                           style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w800,
@@ -1250,7 +1314,7 @@ class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
                         decimal: true),
                     onChanged: (_) => setState(() {}),
                     decoration: InputDecoration(
-                      hintText: AppFormatters.tsh(cart.total),
+                      hintText: AppFormatters.tsh(totals.total),
                       prefixText: 'TSh ',
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 12),

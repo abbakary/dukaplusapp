@@ -10,30 +10,40 @@ import {
   Store,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import type { AuthUser, BusinessType, Language } from '@/types/v1';
+import type { AuthUser, BusinessType, Language, SaaSPlanTier } from '@/types/v1';
 import { ALL_BUSINESS_TYPES, getBusinessProfile } from '@/lib/businessEngine';
 import { api } from '@/lib/api';
 import { mapApiUserToAuthUser } from '@/lib/authBridge';
+import { useSaasPlans } from '@/context/SaasPlansContext';
+import { formatPlanPrice, planFeatures, planPeriod } from '@/lib/saasPlans';
+import { BrandLogo } from '@/components/ui/BrandLogo';
+import { TermsAcceptanceCheckbox } from '@/components/v1/TermsOfServiceView';
+import { termsMustAcceptError } from '@/lib/termsOfService';
 
 interface PublicRegisterWizardViewProps {
   language: Language;
   initialBusinessType?: BusinessType;
+  initialPlan?: SaaSPlanTier;
   onBack: () => void;
   onLogin: () => void;
+  onOpenTerms?: () => void;
   onRegisterSuccess: (user: AuthUser) => void;
 }
 
 const TEAL = '#0d9488';
-const STEPS = ['Account', 'Business type', 'Shop details', 'Review'];
+const STEPS = ['Account', 'Business type', 'Plan', 'Shop details', 'Review'];
 
 export const PublicRegisterWizardView: React.FC<PublicRegisterWizardViewProps> = ({
   language,
   initialBusinessType,
+  initialPlan,
   onBack,
   onLogin,
+  onOpenTerms,
   onRegisterSuccess,
 }) => {
   const isSw = language === 'sw';
+  const { plans } = useSaasPlans();
   const [step, setStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -45,14 +55,22 @@ export const PublicRegisterWizardView: React.FC<PublicRegisterWizardViewProps> =
   const [regPassword, setRegPassword] = useState('');
   const [regPasswordConfirm, setRegPasswordConfirm] = useState('');
   const [businessType, setBusinessType] = useState<BusinessType>(initialBusinessType ?? 'retail');
+  const [selectedPlan, setSelectedPlan] = useState<SaaSPlanTier>(initialPlan ?? 'biashara_pro');
   const [businessName, setBusinessName] = useState('');
   const [location, setLocation] = useState('Kariakoo, Dar es Salaam');
   const [tinNumber, setTinNumber] = useState('');
   const [licenseNumber, setLicenseNumber] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   useEffect(() => {
     if (initialBusinessType) setBusinessType(initialBusinessType);
   }, [initialBusinessType]);
+
+  useEffect(() => {
+    if (initialPlan) setSelectedPlan(initialPlan);
+  }, [initialPlan]);
+
+  const selectedPlanMeta = plans.find(p => p.tier === selectedPlan) ?? plans[0];
 
   const validateStep = (s: number): boolean => {
     setError('');
@@ -62,7 +80,11 @@ export const PublicRegisterWizardView: React.FC<PublicRegisterWizardViewProps> =
       if (regPassword.length < 6) { setError(isSw ? 'Nenosiri angalau herufi 6.' : 'Password min 6 chars.'); return false; }
       if (regPassword !== regPasswordConfirm) { setError(isSw ? 'Nenosiri halilingani.' : 'Passwords mismatch.'); return false; }
     }
-    if (s === 3 && !businessName.trim()) {
+    if (s === 3 && !selectedPlan) {
+      setError(isSw ? 'Chagua kifurushi.' : 'Select a plan.');
+      return false;
+    }
+    if (s === 4 && !businessName.trim()) {
       setError(isSw ? 'Weka jina la biashara.' : 'Enter business name.');
       return false;
     }
@@ -71,11 +93,15 @@ export const PublicRegisterWizardView: React.FC<PublicRegisterWizardViewProps> =
 
   const next = () => {
     if (!validateStep(step)) return;
-    setStep(s => Math.min(4, s + 1));
+    setStep(s => Math.min(5, s + 1));
   };
 
   const submit = async () => {
-    if (!validateStep(3)) { setStep(3); return; }
+    if (!validateStep(4)) { setStep(4); return; }
+    if (!acceptedTerms) {
+      setError(termsMustAcceptError(isSw));
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -90,6 +116,7 @@ export const PublicRegisterWizardView: React.FC<PublicRegisterWizardViewProps> =
         license_number: licenseNumber.trim(),
         region: 'Dar es Salaam',
         district: location.trim() || 'Ilala',
+        plan_tier: selectedPlan,
       });
       const tokens = await api.login(regEmail.trim(), regPassword);
       api.setTokens(tokens.access_token, tokens.refresh_token);
@@ -119,12 +146,9 @@ export const PublicRegisterWizardView: React.FC<PublicRegisterWizardViewProps> =
 
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-xl text-white flex items-center justify-center font-black" style={{ background: TEAL }}>+</div>
-            <span className="font-bold text-xl">DUKA+</span>
-          </div>
+          <BrandLogo height={44} className="mb-4 mx-auto" />
           <h1 className="text-2xl font-serif font-bold text-slate-900">{isSw ? 'Sajili biashara yako' : 'Register your business'}</h1>
-          <p className="text-sm text-slate-500 mt-1">{isSw ? `Hatua ${step} kati ya 4` : `Step ${step} of 4`}</p>
+          <p className="text-sm text-slate-500 mt-1">{isSw ? `Hatua ${step} kati ya 5` : `Step ${step} of 5`}</p>
         </div>
 
         <div className="flex gap-2 mb-6">
@@ -184,6 +208,47 @@ export const PublicRegisterWizardView: React.FC<PublicRegisterWizardViewProps> =
 
           {step === 3 && (
             <div className="space-y-4">
+              <h2 className="font-bold text-lg">{isSw ? 'Chagua kifurushi cha usajili' : 'Choose your subscription plan'}</h2>
+              <p className="text-sm text-slate-500">
+                {isSw
+                  ? 'Bei inaonyeshwa kulingana na mipango ya sasa — inasimamiwa na mtoa huduma.'
+                  : 'Pricing reflects current provider-managed packages.'}
+              </p>
+              <div className="space-y-3">
+                {plans.map(plan => (
+                  <button
+                    key={plan.id}
+                    type="button"
+                    onClick={() => setSelectedPlan(plan.tier)}
+                    className={`w-full text-left p-4 rounded-xl border transition-all cursor-pointer ${
+                      selectedPlan === plan.tier ? 'border-teal-500 bg-teal-50 ring-1 ring-teal-500' : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <div className="font-bold text-slate-900">{isSw ? plan.nameSw : plan.name}</div>
+                        <div className="text-xs text-slate-500 mt-0.5">{isSw ? plan.tagSw : plan.tagEn}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-black text-teal-700">{formatPlanPrice(plan, isSw)}</div>
+                        {!plan.contactUs && (
+                          <div className="text-[10px] text-slate-500">{planPeriod(isSw)}</div>
+                        )}
+                      </div>
+                    </div>
+                    <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+                      {planFeatures(plan, language).slice(0, 3).map(f => (
+                        <li key={f} className="text-[10px] text-slate-600">• {f}</li>
+                      ))}
+                    </ul>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="space-y-4">
               <h2 className="font-bold text-lg">{isSw ? 'Maelezo ya duka & TRA' : 'Shop & compliance details'}</h2>
               <input className={inputCls} placeholder={isSw ? 'Jina la biashara' : 'Business name'} value={businessName} onChange={e => setBusinessName(e.target.value)} />
               <input className={inputCls} placeholder={isSw ? 'Mahali / mtaa' : 'Location'} value={location} onChange={e => setLocation(e.target.value)} />
@@ -194,7 +259,7 @@ export const PublicRegisterWizardView: React.FC<PublicRegisterWizardViewProps> =
             </div>
           )}
 
-          {step === 4 && (
+          {step === 5 && (
             <div className="space-y-4">
               <h2 className="font-bold text-lg">{isSw ? 'Hakiki & tuma' : 'Review & submit'}</h2>
               <div className="rounded-xl bg-slate-50 border border-slate-100 p-4 space-y-3 text-sm">
@@ -206,11 +271,24 @@ export const PublicRegisterWizardView: React.FC<PublicRegisterWizardViewProps> =
                 <div><span className="text-slate-500">Email:</span> {regEmail}</div>
                 <div><span className="text-slate-500">{isSw ? 'Mahali:' : 'Location:'}</span> {location}</div>
                 {tinNumber && <div><span className="text-slate-500">TIN:</span> {tinNumber}</div>}
+                <div className="pt-2 border-t border-slate-200">
+                  <span className="text-slate-500">{isSw ? 'Kifurushi:' : 'Plan:'}</span>{' '}
+                  <strong>{selectedPlanMeta ? (isSw ? selectedPlanMeta.nameSw : selectedPlanMeta.name) : selectedPlan}</strong>
+                  {!selectedPlanMeta?.contactUs && (
+                    <span className="text-slate-500"> — {formatPlanPrice(selectedPlanMeta, isSw)}{planPeriod(isSw)}</span>
+                  )}
+                </div>
               </div>
               <div className="flex items-start gap-2 text-xs text-slate-500">
                 <ShieldCheck className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
                 {isSw ? 'Data yako inalindwa na inafuata kanuni za biashara Tanzania.' : 'Your data is secured and aligned with Tanzania business compliance.'}
               </div>
+              <TermsAcceptanceCheckbox
+                language={language}
+                checked={acceptedTerms}
+                onChange={setAcceptedTerms}
+                onOpenTerms={onOpenTerms}
+              />
             </div>
           )}
 
@@ -220,12 +298,12 @@ export const PublicRegisterWizardView: React.FC<PublicRegisterWizardViewProps> =
                 {isSw ? 'Rudi' : 'Back'}
               </button>
             )}
-            {step < 4 ? (
+            {step < 5 ? (
               <button type="button" onClick={next} className="flex-1 py-2.5 rounded-full text-sm font-bold text-white cursor-pointer flex items-center justify-center gap-2" style={{ background: TEAL }}>
                 {isSw ? 'Endelea' : 'Continue'} <ArrowRight className="w-4 h-4" />
               </button>
             ) : (
-              <button type="button" disabled={loading} onClick={() => void submit()} className="flex-1 py-2.5 rounded-full text-sm font-bold text-white cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60" style={{ background: TEAL }}>
+              <button type="button" disabled={loading || !acceptedTerms} onClick={() => void submit()} className="flex-1 py-2.5 rounded-full text-sm font-bold text-white cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60" style={{ background: TEAL }}>
                 <CheckCircle2 className="w-4 h-4" />
                 {loading ? (isSw ? 'Inasajili…' : 'Creating…') : (isSw ? 'Unda akaunti' : 'Create account')}
               </button>

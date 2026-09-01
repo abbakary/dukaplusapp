@@ -10,6 +10,7 @@ import '../../widgets/gradient_app_bar.dart';
 import '../../widgets/shimmer_loader.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/search_bar_widget.dart';
+import '../../widgets/shell_insets.dart';
 
 final _supplierSearchProvider = StateProvider<String>((ref) => '');
 
@@ -107,10 +108,12 @@ class SuppliersScreen extends ConsumerWidget {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showCreatePO(context),
-        icon: const Icon(Icons.add_shopping_cart_rounded),
-        label: Text(l10n.createPO),
+      floatingActionButton: ShellFab(
+        child: FloatingActionButton.extended(
+          onPressed: () => _showCreatePO(context),
+          icon: const Icon(Icons.add_shopping_cart_rounded),
+          label: Text(l10n.createPO),
+        ),
       ),
     );
   }

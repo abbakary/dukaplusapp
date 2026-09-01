@@ -14,20 +14,17 @@ import {
   Store,
   ArrowLeft, 
   User, 
-  Check, 
   Pill, 
   ShoppingBag, 
   Hammer, 
   Utensils, 
   Briefcase
 } from 'lucide-react';
-import { BusinessType, Language, UserRole, AuthUser, TenantStore, StaffRole } from '@/types/v1';
+import { BusinessType, Language, UserRole, AuthUser, TenantStore } from '@/types/v1';
 
 interface HeaderProps {
   role?: UserRole;
-  setRole?: (role: UserRole) => void;
   userRole?: UserRole;
-  setUserRole?: (role: UserRole) => void;
   businessType?: BusinessType;
   setBusinessType?: (type: BusinessType) => void;
   language: Language;
@@ -54,9 +51,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   role,
-  setRole,
   userRole,
-  setUserRole,
   businessType = 'pharmacy',
   setBusinessType,
   language = 'sw',
@@ -82,7 +77,6 @@ export const Header: React.FC<HeaderProps> = ({
   const archetypeMenuRef = useRef<HTMLDivElement>(null);
 
   const currentRole = role || userRole || currentUser?.role || 'vendor_owner';
-  const staffRole: StaffRole = currentUser?.staffRole || (currentRole === 'vendor_owner' ? 'Owner' : 'Cashier');
   const isSuperAdmin = currentRole === 'super_admin';
   const isSw = language === 'sw';
 
@@ -99,12 +93,6 @@ export const Header: React.FC<HeaderProps> = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const handleSetRole = (r: UserRole) => {
-    if (setRole) setRole(r);
-    if (setUserRole) setUserRole(r);
-    setIsUserMenuOpen(false);
-  };
 
   const getInitials = (name?: string) => {
     if (!name) return 'DU';
@@ -284,7 +272,7 @@ export const Header: React.FC<HeaderProps> = ({
                   {isSuperAdmin ? 'Super Admin' : (currentUser?.name || 'Salum Omar')}
                 </div>
                 <div className="text-[10px] font-bold text-[#6264A7] truncate">
-                  {isSuperAdmin ? 'Provider' : `${staffRole} • ${currentUser?.branch || 'Kariakoo'}`}
+                  {isSuperAdmin ? 'Provider' : (currentUser?.branch || 'Kariakoo')}
                 </div>
               </div>
               <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
@@ -300,42 +288,6 @@ export const Header: React.FC<HeaderProps> = ({
                   <div>
                     <h4 className="font-extrabold text-sm text-[#323130]">{currentUser?.name || 'Salum Omar'}</h4>
                     <p className="text-[11px] text-slate-500">{currentUser?.email || 'admin@duka.co.tz'}</p>
-                    <span className="inline-block mt-1 px-2 py-0.5 rounded bg-indigo-50 text-[#6264A7] font-bold text-[10px]">
-                      {staffRole} • {currentUser?.branch || 'Kariakoo Flagship'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Role Switcher in User Menu for Quick Dev Testing */}
-                <div className="py-2 border-b border-slate-100 space-y-1">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                    {isSw ? 'Mamlaka ya Akaunti (Role):' : 'Active Account Role:'}
-                  </div>
-                  <div className="grid grid-cols-3 gap-1">
-                    <button
-                      onClick={() => handleSetRole('vendor_owner')}
-                      className={`px-2 py-1.5 rounded-lg font-bold text-center text-[11px] cursor-pointer transition-all ${
-                        currentRole === 'vendor_owner' ? 'bg-[#6264A7] text-white shadow-2xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                      }`}
-                    >
-                      👑 Owner
-                    </button>
-                    <button
-                      onClick={() => handleSetRole('vendor_staff')}
-                      className={`px-2 py-1.5 rounded-lg font-bold text-center text-[11px] cursor-pointer transition-all ${
-                        currentRole === 'vendor_staff' ? 'bg-[#6264A7] text-white shadow-2xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                      }`}
-                    >
-                      💳 Staff
-                    </button>
-                    <button
-                      onClick={() => handleSetRole('super_admin')}
-                      className={`px-2 py-1.5 rounded-lg font-bold text-center text-[11px] cursor-pointer transition-all ${
-                        currentRole === 'super_admin' ? 'bg-emerald-600 text-white shadow-2xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                      }`}
-                    >
-                      🛡️ Admin
-                    </button>
                   </div>
                 </div>
 

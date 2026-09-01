@@ -48,7 +48,11 @@ import {
 } from '@/types/v1';
 import { formatTSh } from '@/utils/translations';
 import { ComplianceTrustPanel } from '@/components/v1/ComplianceTrustPanel';
+import { DocumentTemplatesView } from '@/components/v1/DocumentTemplatesView';
 import { canManageStaffRBAC } from '@/lib/rbac';
+import { useSaasPlans } from '@/context/SaasPlansContext';
+import { derivePaymentStatus, formatPlanPrice, paymentStatusLabel, paymentStatusTone, planPeriod } from '@/lib/saasPlans';
+import type { SaaSPlanTier } from '@/types/v1';
 import confetti from 'canvas-confetti';
 
 interface AccountSettingsViewProps {
@@ -66,6 +70,8 @@ interface AccountSettingsViewProps {
   setStaffList?: React.Dispatch<React.SetStateAction<StaffMember[]>>;
   onSwitchToStaffSite?: (staff: StaffMember) => void;
   onNavigate?: (tab: string) => void;
+  currentPlanTier?: SaaSPlanTier;
+  subscriptionExpiry?: string;
 }
 
 export const AccountSettingsView: React.FC<AccountSettingsViewProps> = ({
@@ -83,10 +89,15 @@ export const AccountSettingsView: React.FC<AccountSettingsViewProps> = ({
   setStaffList: externalSetStaffList,
   onSwitchToStaffSite,
   onNavigate,
+  currentPlanTier = 'biashara_pro',
+  subscriptionExpiry = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
 }) => {
   const isSw = language === 'sw';
+  const { plans } = useSaasPlans();
+  const activePlan = plans.find(p => p.tier === currentPlanTier) ?? plans[0];
+  const paymentStatus = derivePaymentStatus(subscriptionExpiry, 'active');
   const canManageTeam = canManageStaffRBAC(currentUser);
-  const [activeTab, setActiveTab] = useState<'profile' | 'team' | 'branches' | 'compliance'>(canManageStaffRBAC(currentUser) ? 'team' : 'profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'team' | 'branches' | 'compliance' | 'documents' | 'billing'>(canManageStaffRBAC(currentUser) ? 'team' : 'profile');
 
   // Internal or external staff list
   const [internalStaffList, setInternalStaffList] = useState<StaffMember[]>([]);
@@ -337,6 +348,8 @@ export const AccountSettingsView: React.FC<AccountSettingsViewProps> = ({
           { id: 'profile', label: isSw ? 'Wasifu wa Biashara' : 'Store Profile & Identity', icon: <Store className="w-4 h-4" /> },
           { id: 'branches', label: isSw ? 'Matawi ya Maduka' : 'Store Branches', icon: <Building2 className="w-4 h-4" />, managerOnly: true },
           { id: 'compliance', label: isSw ? 'Kodi za TRA & EFD' : 'TRA EFD & Compliance', icon: <ShieldCheck className="w-4 h-4" /> },
+          { id: 'billing', label: isSw ? 'Usajili & Malipo' : 'Plan & Billing', icon: <CreditCard className="w-4 h-4" /> },
+          { id: 'documents', label: isSw ? 'Violezo vya Hati' : 'Document Templates', icon: <FileText className="w-4 h-4" /> },
         ].filter(tab => !tab.managerOnly || canManageTeam).map((tab) => (
           <button
             key={tab.id}
@@ -883,6 +896,48 @@ export const AccountSettingsView: React.FC<AccountSettingsViewProps> = ({
           businessName={businessName}
           tinNumber={tinNumber}
         />
+      )}
+
+      {activeTab === 'billing' && (
+        <div className="bg-white rounded-xl border border-[#E1DFDD] p-6 shadow-xs space-y-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h3 className="text-base font-bold text-[#323130]">{isSw ? 'Kifurushi chako cha Duka+' : 'Your Duka+ subscription'}</h3>
+              <p className="text-xs text-[#605E5C] mt-1">
+                {isSw ? 'Hali ya malipo inasawazishwa na mtoa huduma.' : 'Payment status syncs with the provider portal.'}
+              </p>
+            </div>
+            <span className={`text-xs px-3 py-1 rounded-full border font-bold ${paymentStatusTone(paymentStatus)}`}>
+              {paymentStatusLabel(paymentStatus, isSw)}
+            </span>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="p-4 rounded-xl bg-[#F9F9F7] border border-[#003322]/10">
+              <div className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37]">{isSw ? 'Mpango' : 'Plan'}</div>
+              <div className="text-lg font-bold text-[#003322] mt-1">{isSw ? activePlan.nameSw : activePlan.name}</div>
+              <div className="text-sm text-[#605E5C]">{formatPlanPrice(activePlan, isSw)}{!activePlan.contactUs && planPeriod(isSw)}</div>
+            </div>
+            <div className="p-4 rounded-xl bg-[#F9F9F7] border border-[#003322]/10">
+              <div className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37]">{isSw ? 'Inaisha' : 'Renews / expires'}</div>
+              <div className="text-lg font-bold text-[#003322] mt-1">{subscriptionExpiry}</div>
+              <div className="text-xs text-[#605E5C]">{isSw ? 'Mwezi mmoja baada ya malipo' : 'Extended 1 month after payment'}</div>
+            </div>
+            <div className="p-4 rounded-xl bg-[#F9F9F7] border border-[#003322]/10">
+              <div className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37]">M-Pesa</div>
+              <div className="text-sm font-bold text-[#003322] mt-1">Lipa kwa: 150 000 — DUKAPLUS</div>
+              <div className="text-xs text-[#605E5C]">{isSw ? 'Tuma kumbukumbu ya barua pepe yako' : 'Use your registered email as reference'}</div>
+            </div>
+          </div>
+          <ul className="text-xs text-[#605E5C] space-y-1">
+            {activePlan.features.slice(0, 4).map(f => (
+              <li key={f} className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> {f}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {activeTab === 'documents' && (
+        <DocumentTemplatesView language={language} />
       )}
 
       {/* MODAL 1: ADD NEW STAFF WITH ROLE PRESETS */}

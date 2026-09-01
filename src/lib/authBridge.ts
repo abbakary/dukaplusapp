@@ -11,6 +11,10 @@ interface ApiUser {
   staff_id?: string;
   business_name?: string;
   business_type?: string;
+  plan?: string;
+  subscription_expiry?: string;
+  tin_number?: string;
+  license_number?: string;
   staff_role?: string;
   permissions?: Partial<StaffPermissions>;
   language?: string;
@@ -32,6 +36,10 @@ export function mapApiUserToAuthUser(apiUser: ApiUser): AuthUser {
     staff_id: apiUser.staff_id,
     permissions: apiUser.permissions,
     status: (apiUser.status as AuthUser['status']) || 'approved',
+    tinNumber: apiUser.tin_number,
+    licenseNumber: apiUser.license_number,
+    plan: apiUser.plan as AuthUser['plan'],
+    subscriptionExpiry: apiUser.subscription_expiry,
   };
 }
 

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
 
-class StatCard extends StatelessWidget {
+// ─────────────────────────────────────────────────────────────────────────────
+// StatCard — animated premium gradient KPI card
+// ─────────────────────────────────────────────────────────────────────────────
+class StatCard extends StatefulWidget {
   final String label;
   final String value;
   final String? subValue;
@@ -9,6 +12,8 @@ class StatCard extends StatelessWidget {
   final LinearGradient gradient;
   final VoidCallback? onTap;
   final Widget? trailing;
+  final String? trend; // e.g. "+12%" or "-5%"
+  final bool trendPositive;
 
   const StatCard({
     super.key,
@@ -19,81 +24,173 @@ class StatCard extends StatelessWidget {
     required this.gradient,
     this.onTap,
     this.trailing,
+    this.trend,
+    this.trendPositive = true,
   });
 
   @override
+  State<StatCard> createState() => _StatCardState();
+}
+
+class _StatCardState extends State<StatCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double>   _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl  = AnimationController(
+      vsync:    this,
+      duration: const Duration(milliseconds: 150),
+    );
+    _scale = Tween<double>(begin: 1.0, end: 0.96)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
+    final card = AnimatedBuilder(
+      animation: _scale,
+      builder: (_, child) => Transform.scale(scale: _scale.value, child: child),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: gradient,
+          gradient: widget.gradient,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: gradient.colors.first.withOpacity(0.35),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              color:   widget.gradient.colors.first.withOpacity(0.30),
+              blurRadius: 14,
+              spreadRadius: 0,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Icon + optional trailing
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  width: 38, height: 38,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.white.withOpacity(0.20),
+                    borderRadius: BorderRadius.circular(11),
                   ),
-                  child: Icon(icon, color: Colors.white, size: 20),
+                  child: Icon(widget.icon, color: Colors.white, size: 20),
                 ),
-                if (trailing != null) trailing!,
+                if (widget.trailing != null)
+                  widget.trailing!
+                else if (widget.onTap != null)
+                  Container(
+                    width: 26, height: 26,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.arrow_forward_rounded,
+                      color: Colors.white, size: 14),
+                  ),
               ],
             ),
-            const SizedBox(height: 12),
-            Text(value,
-              style: const TextStyle(
-                color: Colors.white, fontSize: 22,
-                fontWeight: FontWeight.w700, letterSpacing: -0.5,
-              ),
+            const SizedBox(height: 14),
+            // Value
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(widget.value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                  height: 1.0,
+                )),
             ),
-            if (subValue != null) ...[
-              const SizedBox(height: 2),
-              Text(subValue!,
-                style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)),
+            if (widget.subValue != null) ...[
+              const SizedBox(height: 3),
+              Text(widget.subValue!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.80),
+                  fontSize: 11,
+                )),
             ],
-            const SizedBox(height: 4),
-            Text(label,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.85), fontSize: 12, fontWeight: FontWeight.w500,
-              ),
+            const SizedBox(height: 6),
+            // Label + trend badge
+            Row(
+              children: [
+                Expanded(
+                  child: Text(widget.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color:      Colors.white.withOpacity(0.85),
+                      fontSize:   11,
+                      fontWeight: FontWeight.w500,
+                    )),
+                ),
+                if (widget.trend != null) ...[
+                  const SizedBox(width: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(widget.trend!,
+                      style: const TextStyle(
+                        color:      Colors.white,
+                        fontSize:   10,
+                        fontWeight: FontWeight.w700,
+                      )),
+                  ),
+                ],
+              ],
             ),
           ],
         ),
       ),
     );
+
+    if (widget.onTap == null) return card;
+
+    return GestureDetector(
+      onTapDown:   (_) => _ctrl.forward(),
+      onTapUp:     (_) { _ctrl.reverse(); widget.onTap!(); },
+      onTapCancel: () => _ctrl.reverse(),
+      child: card,
+    );
   }
 }
 
-// ── Compact horizontal stat tile ─────────────────────────────────────────────
-class StatTile extends StatelessWidget {
+// ─────────────────────────────────────────────────────────────────────────────
+// InfoCard — lighter flat card with icon and single value
+// ─────────────────────────────────────────────────────────────────────────────
+class InfoCard extends StatelessWidget {
   final String label;
   final String value;
-  final Color color;
   final IconData icon;
+  final Color color;
   final VoidCallback? onTap;
 
-  const StatTile({
+  const InfoCard({
     super.key,
     required this.label,
     required this.value,
-    required this.color,
     required this.icon,
+    required this.color,
     this.onTap,
   });
 
@@ -102,39 +199,38 @@ class StatTile extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.2)),
+          color: color.withOpacity(0.07),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withOpacity(0.18)),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              width: 34, height: 34,
               decoration: BoxDecoration(
                 color: color.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: color, size: 18),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(value,
-                    style: TextStyle(
-                      color: color, fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    )),
-                  Text(label,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary, fontSize: 11,
-                    )),
-                ],
-              ),
-            ),
+            const SizedBox(height: 10),
+            Text(value,
+              style: TextStyle(
+                fontSize:   18,
+                fontWeight: FontWeight.w800,
+                color:      color,
+                letterSpacing: -0.3,
+              )),
+            const SizedBox(height: 2),
+            Text(label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500,
+              )),
           ],
         ),
       ),

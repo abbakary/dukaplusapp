@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/utils/report_pdf_builder.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/rbac/role_access.dart';
 import '../../providers/auth_provider.dart';
@@ -14,6 +15,8 @@ import '../../widgets/shimmer_loader.dart';
 import '../../widgets/stat_card.dart';
 import '../../providers/locale_provider.dart';
 import '../../l10n/app_localizations.dart';
+import '../../widgets/ai_assistant_fab.dart';
+import '../../widgets/shell_insets.dart';
 
 class ReportsScreen extends ConsumerWidget {
   const ReportsScreen({super.key});
@@ -31,15 +34,34 @@ class ReportsScreen extends ConsumerWidget {
         title: l10n.reports,
         subtitle: l10n.reportsSubtitle,
         actions: [
+          AiAppBarButton(prompt: l10n.aiReportsPrompt),
           IconButton(
             icon: const Icon(Icons.file_download_outlined, color: Colors.white),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(l10n.exportWeb),
+            tooltip: 'Export PDF',
+            onPressed: () async {
+              final stats = ref.read(refreshedDashboardProvider).valueOrNull;
+              if (stats == null) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text(l10n.loading),
                   behavior: SnackBarBehavior.floating,
-                ),
-              );
+                ));
+                return;
+              }
+              try {
+                await exportSalesReportPdf(
+                  user:  ref.read(currentUserProvider),
+                  stats: stats,
+                  isSw:  ref.read(localeProvider) == AppLanguage.sw,
+                );
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(l10n.errorMessage(e.toString())),
+                    backgroundColor: AppColors.danger,
+                    behavior: SnackBarBehavior.floating,
+                  ));
+                }
+              }
             },
           ),
         ],
@@ -70,7 +92,7 @@ class _ReportsBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final primary = AppColors.forBusiness(bizType);
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: ShellInsets.pagePadding(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -3,10 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/utils/report_pdf_builder.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/dashboard_provider.dart';
 import '../../providers/offline_sync_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/permissions_provider.dart';
+import '../../providers/business_settings_provider.dart';
+import '../../data/models/dashboard_model.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/gradient_app_bar.dart';
 
@@ -104,7 +108,21 @@ class SettingsScreen extends ConsumerWidget {
               icon: Icons.calculate_outlined,
               title: l10n.vatSettings,
               subtitle: l10n.vatStandard,
-              onTap: () {},
+              onTap: () => context.push('/documents'),
+            ),
+            _SettingsTile(
+              icon: Icons.description_outlined,
+              title: l10n.documentTemplates,
+              subtitle: l10n.documentTemplatesSubtitle,
+              onTap: () => context.push('/documents'),
+            ),
+            _SettingsTile(
+              icon: Icons.discount_outlined,
+              title: l10n.discountSettings,
+              subtitle: ref.watch(businessSettingsProvider).discountEnabled
+                  ? l10n.discountEnabled
+                  : l10n.discountDisabled,
+              onTap: () => context.push('/documents'),
             ),
 
             _SectionHeader(l10n.application),
@@ -159,10 +177,34 @@ class SettingsScreen extends ConsumerWidget {
               icon: Icons.cloud_download_outlined,
               title: l10n.exportData,
               subtitle: l10n.exportSubtitle,
-              onTap: () {},
+              onTap: () async {
+                final stats = ref.read(refreshedDashboardProvider).valueOrNull
+                    ?? DashboardStats.demo();
+                try {
+                  await exportSalesReportPdf(
+                    user:  ref.read(currentUserProvider),
+                    stats: stats,
+                    isSw:  ref.read(localeProvider) == AppLanguage.sw,
+                  );
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(l10n.errorMessage(e.toString())),
+                      backgroundColor: AppColors.danger,
+                      behavior: SnackBarBehavior.floating,
+                    ));
+                  }
+                }
+              },
             ),
 
             _SectionHeader(l10n.about),
+            _SettingsTile(
+              icon: Icons.gavel_outlined,
+              title: ref.watch(localeProvider) == AppLanguage.sw ? 'Masharti ya Huduma' : 'Terms of Service',
+              subtitle: ref.watch(localeProvider) == AppLanguage.sw ? 'TRA EFD, TIN & wajibu wa mteja' : 'TRA EFD, TIN & client duties',
+              onTap: () => context.push('/terms'),
+            ),
             _SettingsTile(
               icon: Icons.info_outline_rounded,
               title: l10n.appVersion,

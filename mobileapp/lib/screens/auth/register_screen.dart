@@ -5,6 +5,8 @@ import '../../core/theme/app_colors.dart';
 import '../../core/constants/app_constants.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/locale_provider.dart';
+import '../../screens/legal/terms_of_service_screen.dart';
+import '../../core/legal/terms_of_service.dart';
 import '../../l10n/app_localizations.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -26,6 +28,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   int _step = 0;
   String _selectedType = 'retail';
   bool _obscure = true;
+  bool _acceptedTerms = false;
 
   @override
   void dispose() {
@@ -36,6 +39,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     final l10n = ref.read(appLocalizationsProvider);
+    final isSw = ref.read(localeProvider) == AppLanguage.sw;
+    if (!_acceptedTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(termsMustAcceptError(isSw)),
+        backgroundColor: AppColors.danger,
+        behavior: SnackBarBehavior.floating,
+      ));
+      return;
+    }
     try {
       await ref.read(authProvider.notifier).register({
         'name':          _nameCtrl.text.trim(),
@@ -238,7 +250,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     ),
   );
 
-  Widget _buildStep2(AppLocalizations l10n, bool isLoading) => SingleChildScrollView(
+  Widget _buildStep2(AppLocalizations l10n, bool isLoading) {
+    final isSw = ref.watch(localeProvider) == AppLanguage.sw;
+    return SingleChildScrollView(
     key: const ValueKey(2),
     padding: const EdgeInsets.all(20),
     child: Column(
@@ -276,11 +290,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           ),
           validator: (v) => (v == null || v.length < 6) ? l10n.minSixChars : null,
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 18),
+        TermsAcceptanceTile(
+          isSw: isSw,
+          value: _acceptedTerms,
+          onChanged: (v) => setState(() => _acceptedTerms = v ?? false),
+          onOpenTerms: () => context.push('/terms'),
+        ),
+        const SizedBox(height: 20),
         SizedBox(
           width: double.infinity, height: 52,
           child: ElevatedButton(
-            onPressed: isLoading ? null : _submit,
+            onPressed: isLoading || !_acceptedTerms ? null : _submit,
             child: isLoading
                 ? const SizedBox(width: 22, height: 22,
                     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
@@ -306,4 +327,5 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       ],
     ),
   );
+  }
 }

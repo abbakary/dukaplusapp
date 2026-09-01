@@ -89,12 +89,14 @@ class AppLocalizations {
       'reports': 'Reports', 'bi': 'Profit BI', 'pending': 'Uncompleted',
       'suppliers': 'Suppliers', 'expenses': 'Expenses', 'branches': 'Branches',
       'settings': 'Settings', 'credit': 'Credit', 'myStipend': 'My Stipend',
+      'documents': 'Documents',
     };
     const sw = {
       'home': 'Nyumbani', 'pos': 'POS', 'stock': 'Stoo', 'clients': 'Wateja',
       'reports': 'Ripoti', 'bi': 'Faida BI', 'pending': 'Yasiyokamilika',
       'suppliers': 'Wasambazaji', 'expenses': 'Matumizi', 'branches': 'Matawi',
       'settings': 'Mipangilio', 'credit': 'Mikopo', 'myStipend': 'Posho Yangu',
+      'documents': 'Hati',
     };
     return isSw ? (sw[key] ?? key) : (en[key] ?? key);
   }
@@ -455,6 +457,23 @@ class AppLocalizations {
   String get draftRestored => t('Draft restored — continue sale', 'Rasimu imerejeshwa — endelea mauzo');
   String get subtotal => t('Subtotal', 'Jumla Ndogo');
   String get vat18 => t('VAT (18%)', 'VAT (18%)');
+
+  String get documentTemplates => t('Document Templates', 'Violezo vya Hati');
+  String get termsOfService => t('Terms of Service', 'Masharti ya Huduma');
+  String get documentTemplatesSubtitle => t(
+    'Delivery, order & invoice notes — 4 designs each',
+    'Noti za uwasilishaji, agizo na ankara — miundo 4 kila moja',
+  );
+  String get discountSettings => t('Discount Settings', 'Mipangilio ya Punguzo');
+  String get allowDiscounts => t('Allow discounts at POS', 'Ruhusu punguzo kwenye POS');
+  String get showDiscountOnReceipts => t('Show discount on receipts', 'Onyesha punguzo kwenye risiti');
+  String get showDiscountOnDocuments => t('Show discount on documents', 'Onyesha punguzo kwenye hati');
+  String get maxDiscount => t('Max discount', 'Kikomo cha punguzo');
+  String get discountEnabled => t('Discounts enabled', 'Punguzo limewashwa');
+  String get discountDisabled => t('Discounts disabled', 'Punguzo limezimwa');
+  String get discountPercent => t('Discount (%)', 'Punguzo (%)');
+  String get grossSubtotal => t('Gross subtotal', 'Jumla kabla ya punguzo');
+  String get discount => t('Discount', 'Punguzo');
   String get processing => t('Processing…', 'Inachakata…');
   String get completeSale => t('Complete Sale', 'Kamilisha Mauzo');
   String get saleNotRecorded => t('Sale was not recorded', 'Mauzo hayakurekodiwa');
@@ -478,6 +497,71 @@ class AppLocalizations {
   String get qrDownloaded => t('QR label saved', 'Lebo ya QR imehifadhiwa');
   String qrDownloadedCount(int n) => t('$n QR labels ready', 'Lebo $n za QR ziko tayari');
   String get autoSkuHint => t('Auto-generated — tap refresh to change', 'Imetengenezwa kiotomatiki — bonyeza kuibadilisha');
+
+  // ── Welcome screen feature highlights ─────────────────────────────────────
+  String get featurePos        => t('Point of Sale',   'Mauzo (POS)');
+  String get featurePosDesc    => t('Fast checkout, barcode scan & receipts', 'Malipo ya haraka, skani na risiti');
+  String get featureInventory  => t('Inventory',       'Stoo');
+  String get featureInventoryDesc => t('Real-time stock, expiry & reorder alerts', 'Stoo ya wakati halisi na arifa');
+  String get featureReports    => t('Reports',         'Ripoti');
+  String get featureReportsDesc => t('Daily P&L, charts & export', 'Faida & hasara, grafu na usafirishaji');
+  String get featureCustomers  => t('Customers',       'Wateja');
+  String get featureCustomersDesc => t('CRM, credit management & loyalty', 'CRM, mikopo na uaminifu');
+  String get featureOffline    => t('Works Offline',   'Inafanya Kazi Bila Mtandao');
+  String get featureOfflineDesc => t('Full POS offline — syncs when online', 'POS kamili bila mtandao — inarudisha data');
+  String get featureFinance    => t('Finance',         'Fedha');
+  String get featureFinanceDesc => t('Expenses, payables & BI analytics', 'Matumizi, madeni na uchambuzi');
+
+  // ── AI Assistant ──────────────────────────────────────────────────────────
+  String get aiPro => t('AI Pro', 'AI Pro');
+  String get aiAssistantTitle => t('Duka+ AI Assistant', 'Msaidizi Mahiri wa Duka+');
+  String get aiAssistantSubtitle => t(
+    'Data-driven insights • Swahili & English',
+    'Ushauri kutoka data • Kiswahili & Kiingereza',
+  );
+  String get askQuestionPlaceholder => t(
+    'Ask about sales, stock, customers…',
+    'Uliza kuhusu mauzo, stoo, wateja…',
+  );
+  String get aiBrief => t('AI Brief', 'Ushauri wa AI');
+  String get aiInsights => t('AI Insights', 'Uchambuzi wa AI');
+  String get aiAnalyzing => t(
+    'AI is analyzing your shop data…',
+    'AI inachambua data ya duka lako…',
+  );
+  String get aiNetworkError => t(
+    'Could not reach the AI service. Please try again.',
+    'Mtandao umeshindwa kupokea jibu. Tafadhali jaribu tena.',
+  );
+  String get aiWelcomeMessage => t(
+    'Hello! I am your **Duka+ AI Retail Assistant**. I can help you analyze revenue, forecast inventory restocking, score customer credit risks, or schedule calendar events. How can I help you today?',
+    'Jambo! Mimi ni **Msaidizi Mahiri wa Duka+**. Ninaweza kukusaidia kuchambua mauzo, kutabiri bidhaa zilizopungua stoo, kusimamia madeni ya wateja, au kupanga matukio ya kalenda. Nikusaidie nini leo?',
+  );
+  String get aiDashboardPrompt => t(
+    'Analyze today\'s dashboard — give me a profit report, low-stock items, and strategies to increase sales.',
+    'Fanya uchambuzi wa dashibodi ya leo, unipe ripoti ya faida, bidhaa zilizoisha na mikakati ya kuongeza mauzo ya duka langu.',
+  );
+  String get aiReportsPrompt => t(
+    'Give me a deep analysis of product sales by customer and location. Which products are stagnant and where are the profit opportunities this week?',
+    'Fanya uchambuzi wa kina wa mauzo ya bidhaa kwa kila mteja na eneo. Niambie bidhaa gani inalala, wapi inauzwa kidogo, na nini mikakati ya kuongeza faida wiki hii.',
+  );
+  String get aiInventoryPrompt => t(
+    'Which products are low stock and what should I reorder this week?',
+    'Ni bidhaa gani zimepungua stoo na nini nifanye agizo wiki hii?',
+  );
+  List<String> get aiQuickChips => isSw
+      ? const [
+          '📊 Mauzo ya leo yapoje?',
+          '📦 Ni bidhaa gani zimepungua stoo?',
+          '👥 Wateja gani wana madeni makubwa?',
+          '📅 Panga matukio ya wiki kwa AI',
+        ]
+      : const [
+          '📊 How are today\'s sales?',
+          '📦 Which products are low stock?',
+          '👥 Who has overdue credit debt?',
+          '📅 Schedule weekly events with AI',
+        ];
 }
 
 extension AppLocalizationsX on AppLanguage {

@@ -136,6 +136,10 @@ export function canAccessVendorTab(user: AuthUser | null | undefined, tab: strin
     'branch-management': () => canAccessVendorTab(user, 'branches'),
     settings: () => true,
     profile: () => true,
+    documents: () => {
+      const { isOwner, isManager, isAccountant } = roleFlags(user);
+      return isOwner || isManager || isAccountant;
+    },
     'pending-transactions': () => canAccessVendorTab(user, 'pos'),
     'staff-site': () => canClaimOwnDailyStipend(user) || canSeeExpenses(user) || canAccessVendorTab(user, 'pos'),
   };

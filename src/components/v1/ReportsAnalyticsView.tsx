@@ -16,10 +16,11 @@ import {
   Printer,
   BarChart3
 } from 'lucide-react';
-import { Language, SaleTransaction, Product, Supplier, PurchaseOrder } from '@/types/v1';
+import { Language, SaleTransaction, Product, Supplier, PurchaseOrder, AuthUser } from '@/types/v1';
 import { formatTSh, getTranslation } from '@/utils/translations';
 import { ActionBar } from '@/components/v1/ActionBar';
 import { PredictiveAnalyticsView } from '@/components/v1/PredictiveAnalyticsView';
+import { exportSalesReport } from '@/utils/reportGenerator';
 
 interface ReportsAnalyticsViewProps {
   language: Language;
@@ -30,6 +31,7 @@ interface ReportsAnalyticsViewProps {
   setPurchaseOrders?: React.Dispatch<React.SetStateAction<PurchaseOrder[]>>;
   onOpenAIChatWithPrompt?: (prompt: string) => void;
   onNavigateToSuppliers?: () => void;
+  currentUser?: AuthUser | null;
 }
 
 export const ReportsAnalyticsView: React.FC<ReportsAnalyticsViewProps> = ({
@@ -41,6 +43,7 @@ export const ReportsAnalyticsView: React.FC<ReportsAnalyticsViewProps> = ({
   setPurchaseOrders,
   onOpenAIChatWithPrompt,
   onNavigateToSuppliers,
+  currentUser,
 }) => {
   const isSw = language === 'sw';
   const t = (key: any) => getTranslation(language, key);
@@ -52,6 +55,34 @@ export const ReportsAnalyticsView: React.FC<ReportsAnalyticsViewProps> = ({
   const totalVatCollected = Math.round(totalGrossSales * (0.18 / 1.18));
   const estimatedCost = Math.round(totalGrossSales * 0.62);
   const grossProfit = totalGrossSales - estimatedCost;
+
+  const handleExportPdf = () => {
+    exportSalesReport({
+      provider: {
+        businessName: currentUser?.businessName || 'Duka+ Business',
+        ownerName:    currentUser?.name          || 'Owner',
+        email:        currentUser?.email         || '',
+        phone:        currentUser?.phone,
+        location:     currentUser?.location,
+        tinNumber:    currentUser?.tinNumber,
+        branch:       currentUser?.branch,
+        plan:         currentUser?.plan,
+        businessType: currentUser?.businessType,
+      },
+      sales: sales.map(s => ({
+        receipt:  s.receiptNumber || s.id,
+        customer: s.customerName  || (isSw ? 'Mteja wa Taslimu' : 'Walk-in'),
+        date:     s.date,
+        method:   (s.payments?.[0]?.method || s.type || '').toUpperCase(),
+        vat:      formatTSh(s.vatAmount || Math.round(s.total * (0.18 / 1.18))),
+        total:    formatTSh(s.total),
+      })),
+      totalGross:  formatTSh(totalGrossSales),
+      totalVat:    formatTSh(totalVatCollected),
+      grossProfit: formatTSh(grossProfit),
+      language:    language as 'en' | 'sw',
+    });
+  };
 
   return (
     <div className="space-y-6 pb-12 animate-in fade-in duration-200">
@@ -138,7 +169,7 @@ export const ReportsAnalyticsView: React.FC<ReportsAnalyticsViewProps> = ({
         <div className="space-y-6">
           <ActionBar
             language={language}
-            onExport={() => alert(isSw ? 'Inapakua Ripoti Rasmi ya TRA na Mauzo (PDF/Excel)...' : 'Exporting Official TRA Audit Ledger (PDF/Excel)...')}
+            onExport={handleExportPdf}
             onAISuggest={() => {
               if (onOpenAIChatWithPrompt) {
                 onOpenAIChatWithPrompt('Chambua mapato na kodi ya TRA (VAT 18%) ya mwezi huu.');

@@ -34,6 +34,7 @@ import {
   BusinessType,
 } from '@/types/v1';
 import { formatTSh, getTranslation } from '@/utils/translations';
+import { exportInventoryReport } from '@/utils/reportGenerator';
 import { productMatchesSearch } from '@/lib/productMetaDisplay';
 import { getWorkplace, getProductNamePlaceholder, getDefaultMainCategory, getDefaultUnit } from '@/lib/businessProfiles';
 import { getBusinessProfile } from '@/lib/businessEngine';
@@ -62,6 +63,7 @@ interface InventoryViewProps {
   onReceivePO?: (poId: string) => void;
   businessType?: BusinessType;
   onProductsChanged?: () => void | Promise<void>;
+  currentUser?: import('@/types/v1').AuthUser | null;
 }
 
 export const InventoryView: React.FC<InventoryViewProps> = ({
@@ -80,6 +82,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
   onReceivePO,
   businessType = 'retail',
   onProductsChanged,
+  currentUser,
 }) => {
   const t = (key: any) => getTranslation(language, key);
   const isSw = language === 'sw';
@@ -90,6 +93,33 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
   const showBatch = workplace.features?.batch_tracking ?? false;
   const showExpiry = workplace.features?.expiry_alerts ?? false;
   const showBarcode = workplace.features?.barcode_scan ?? false;
+
+  const handleExportInventory = () => {
+    const totalValue = products.reduce((s, p) => s + (p.stock * (p.cost || 0)), 0);
+    const lowStock = products.filter(p => p.stock <= (p.reorderPoint || 5)).length;
+    exportInventoryReport({
+      provider: {
+        businessName: currentUser?.businessName || 'Duka+ Business',
+        ownerName:    currentUser?.name          || 'Owner',
+        email:        currentUser?.email         || '',
+        phone:        (currentUser as any)?.phone,
+        tinNumber:    (currentUser as any)?.tinNumber,
+        branch:       (currentUser as any)?.branch,
+        businessType: currentUser?.businessType,
+      },
+      products: products.map(p => ({
+        name:     p.name,
+        sku:      p.sku,
+        category: p.category,
+        stock:    `${p.stock} ${p.unit}`,
+        cost:     formatTSh(p.cost || 0),
+        value:    formatTSh(p.stock * (p.cost || 0)),
+      })),
+      totalValue:    formatTSh(totalValue),
+      lowStockCount: lowStock,
+      language:      language as 'en' | 'sw',
+    });
+  };
 
   // Sub tabs: 'catalog' | 'stockin' | 'stockout' | 'movements'
   const [activeTab, setActiveTab] = useState<'catalog' | 'stockin' | 'stockout' | 'movements'>('catalog');
@@ -528,7 +558,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
             onOpenAIChatWithPrompt('Toa ripoti kamili ya uchambuzi wa bidhaa za stoo, utabiri wa mahitaji (Inventory Forecasting), na orodha ya bidhaa za kuagiza kwa wasambazaji.');
           }
         }}
-        onExport={() => alert('Exporting Stock Valuation & Inventory Audit (Excel/PDF)...')}
+        onExport={handleExportInventory}
         customAddLabel="➕ Add Product"
         selectedCount={selectedProductId ? 1 : 0}
         totalCount={products.length}

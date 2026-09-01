@@ -38,6 +38,8 @@ import {
   formatVatLabel,
   generateReceiptNumber,
   generateTraSignature,
+  computeDiscountedSubtotal,
+  capDiscountPercent,
 } from '@/lib/taxComplianceSettings';
 import { api } from '@/lib/api';
 import { mapCustomer, customerToApiPayload } from '@/lib/apiSync';
@@ -355,9 +357,28 @@ export const POSView: React.FC<POSViewProps> = ({
     setCart(prev => prev.filter(item => item.product.id !== productId));
   };
 
-  // Financial Calculations
-  const subtotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-  const saleTotals = calculateSaleTotals({ subtotal }, taxSettings);
+  const handleUpdateDiscount = (productId: string, raw: string) => {
+    const parsed = parseFloat(raw);
+    const pct = taxSettings.discountEnabled
+      ? capDiscountPercent(isNaN(parsed) ? 0 : parsed, taxSettings)
+      : 0;
+    setCart(prev =>
+      prev.map(item =>
+        item.product.id === productId ? { ...item, discountPercent: pct } : item,
+      ),
+    );
+  };
+
+  // Financial Calculations (per-line discounts when enabled)
+  const { subtotal, discountAmount, grossSubtotal } = computeDiscountedSubtotal(
+    cart.map(item => ({
+      unitPrice: item.product.price,
+      quantity: item.quantity,
+      discountPercent: item.discountPercent,
+    })),
+    taxSettings,
+  );
+  const saleTotals = calculateSaleTotals({ subtotal, discountPercent: 0 }, taxSettings);
   const vatAmount = saleTotals.vatAmount;
   const total = saleTotals.total;
 
@@ -904,6 +925,22 @@ export const POSView: React.FC<POSViewProps> = ({
                           </button>
                         </div>
                       </div>
+                      {taxSettings.discountEnabled && (
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-[#EDEBE9]/80">
+                          <span className="text-[10px] font-semibold text-[#605E5C]">
+                            {isSw ? 'Punguzo (%)' : 'Discount (%)'}
+                          </span>
+                          <input
+                            type="number"
+                            min={0}
+                            max={taxSettings.maxDiscountPercent}
+                            value={item.discountPercent || ''}
+                            placeholder="0"
+                            onChange={e => handleUpdateDiscount(item.product.id, e.target.value)}
+                            className="w-14 text-center text-[10px] font-bold bg-white border border-[#EDEBE9] rounded py-0.5 outline-none focus:border-[#6264A7]"
+                          />
+                        </div>
+                      )}
                     </div>
                   );
                 })
@@ -915,6 +952,18 @@ export const POSView: React.FC<POSViewProps> = ({
           <div className="border-t border-[#F3F2F1] pt-3 space-y-3">
             {/* Totals Breakdown */}
             <div className="space-y-1 text-xs text-[#605E5C]">
+              {taxSettings.discountEnabled && taxSettings.showDiscountOnReceipts && discountAmount > 0 && (
+                <>
+                  <div className="flex justify-between">
+                    <span>{isSw ? 'Jumla kabla ya punguzo' : 'Gross subtotal'}:</span>
+                    <span className="font-semibold text-[#323130]">{formatTSh(grossSubtotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-amber-700">
+                    <span>{isSw ? 'Punguzo' : 'Discount'}:</span>
+                    <span className="font-semibold">- {formatTSh(discountAmount)}</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between">
                 <span>{t('subtotal')}:</span>
                 <span className="font-semibold text-[#323130]">{formatTSh(subtotal)}</span>
