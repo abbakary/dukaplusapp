@@ -203,18 +203,30 @@ export function downloadDocumentPdf(
   data: DocumentRenderData,
   branding: DocumentBranding,
   isSw: boolean,
-): void {
+): boolean {
   const body = renderDocumentPreviewHtml(tpl, data, branding, isSw)
     .replace('transform:scale(.92);transform-origin:top center;', '');
   const title = documentTypeLabel(data.documentType, isSw);
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title>
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(title)}</title>
 <style>@page{margin:12mm}body{margin:0;padding:16px;font-family:Segoe UI,system-ui,sans-serif;background:#fff}</style>
-</head><body>${body}<script>window.onload=function(){window.print();}</script></body></html>`;
-  const win = window.open('', '_blank', 'noopener,noreferrer,width=900,height=700');
+</head><body>${body}<script>
+window.addEventListener('load', function () {
+  setTimeout(function () { window.print(); }, 250);
+});
+</script></body></html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank');
+
   if (!win) {
-    alert(isSw ? 'Ruhusu dirisha jipya ili kupakua PDF.' : 'Allow pop-ups to download the PDF.');
-    return;
+    URL.revokeObjectURL(url);
+    alert(isSw ? 'Ruhusu dirisha jipya ili kuchapisha hati.' : 'Allow pop-ups to print the document.');
+    return false;
   }
-  win.document.write(html);
-  win.document.close();
+
+  const cleanup = () => URL.revokeObjectURL(url);
+  win.addEventListener('load', cleanup, { once: true });
+  setTimeout(cleanup, 120_000);
+  return true;
 }
