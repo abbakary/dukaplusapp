@@ -1,11 +1,11 @@
 {
-    "name": "DukaMkononi",
-    "short_name": "DukaMkononi",
+    "name": "DukaPlus+",
+    "short_name": "DukaPlus+",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0F2347",
     "theme_color": "#0F2347",
-    "description": "DukaMkononi — POS & business management for Tanzania",
+    "description": "DukaPlus+ — POS & business management for Tanzania",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -47,7 +47,7 @@ class StoreBranch {
     id:               j['id']?.toString() ?? '',
     name:             j['name']?.toString() ?? '',
     code:             j['code']?.toString() ?? '',
-    type:             _btype(j['type']?.toString()),
+    type:             _btype(j['branch_type']?.toString() ?? j['type']?.toString()),
     status:           _bstatus(j['status']?.toString()),
     region:           j['region']?.toString() ?? '',
     district:         j['district']?.toString() ?? '',

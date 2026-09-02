@@ -47,6 +47,9 @@ import {
   BusinessType
 } from '@/types/v1';
 import { DEFAULT_SAAS_PLANS } from '@/lib/emptyDefaults';
+import { planBranchLabel } from '@/lib/saasPlans';
+import { api } from '@/lib/api';
+import { mapBranch } from '@/lib/apiSync';
 
 interface BranchManagementViewProps {
   language: Language;
@@ -79,7 +82,7 @@ export const BranchManagementView: React.FC<BranchManagementViewProps> = ({
   currentUser,
   activeBranchId,
   setActiveBranchId,
-  currentPlanTier = 'biashara_pro',
+  currentPlanTier = 'starter',
   setCurrentPlanTier,
   onOpenAIChatWithPrompt,
   onNavigateToPOS,
@@ -108,6 +111,10 @@ export const BranchManagementView: React.FC<BranchManagementViewProps> = ({
     phone: string;
     email: string;
     managerStaffId: string;
+    adminName: string;
+    adminEmail: string;
+    adminPhone: string;
+    adminPassword: string;
     traEfdSerial: string;
     openingHours: string;
     notes: string;
@@ -121,10 +128,16 @@ export const BranchManagementView: React.FC<BranchManagementViewProps> = ({
     phone: '+255 ',
     email: '',
     managerStaffId: '',
+    adminName: '',
+    adminEmail: '',
+    adminPhone: '+255 ',
+    adminPassword: '',
     traEfdSerial: `EFD-TZ-2026-${Math.floor(1000 + Math.random() * 9000)}`,
     openingHours: '08:00 - 20:00',
     notes: ''
   });
+  const [branchSaving, setBranchSaving] = useState(false);
+  const [branchSaveError, setBranchSaveError] = useState<string | null>(null);
 
   // New Transfer Form
   const [transferSourceId, setTransferSourceId] = useState<string>('branch-1');
@@ -136,9 +149,10 @@ export const BranchManagementView: React.FC<BranchManagementViewProps> = ({
   const [transferWaybill, setTransferWaybill] = useState<string>('');
 
   // Selected plan lookup
-  const currentPlan = DEFAULT_SAAS_PLANS.find(p => p.tier === currentPlanTier) || DEFAULT_SAAS_PLANS[1];
+  const currentPlan = DEFAULT_SAAS_PLANS.find(p => p.tier === currentPlanTier) || DEFAULT_SAAS_PLANS[0];
   const maxBranchesAllowed = currentPlan.maxBranches;
   const isBranchQuotaReached = branches.length >= maxBranchesAllowed;
+  const canCreateBranches = currentUser?.role === 'vendor_owner' || currentUser?.staffRole === 'Owner';
 
   // Aggregate metrics
   const totalCombinedRevenueToday = branches.reduce((acc, b) => acc + (b.dailyGmvTzs || 0), 0);
@@ -157,12 +171,11 @@ export const BranchManagementView: React.FC<BranchManagementViewProps> = ({
   });
 
   // Handle Add / Edit Branch submit
-  const handleSaveBranch = (e: React.FormEvent) => {
+  const handleSaveBranch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!branchFormData.name || !branchFormData.address) return;
 
     if (editingBranch) {
-      // Edit
       const selectedManager = staffMembers.find(s => s.id === branchFormData.managerStaffId);
       setBranches(prev => prev.map(b => b.id === editingBranch.id ? {
         ...b,
@@ -181,39 +194,57 @@ export const BranchManagementView: React.FC<BranchManagementViewProps> = ({
       } : b));
       setEditingBranch(null);
       setIsAddBranchModalOpen(false);
-    } else {
-      // Create - check quota
-      if (isBranchQuotaReached) {
-        setIsUpgradeModalOpen(true);
-        return;
-      }
-      const selectedManager = staffMembers.find(s => s.id === branchFormData.managerStaffId);
-      const newBranch: StoreBranch = {
-        id: `branch-${Date.now()}`,
+      return;
+    }
+
+    if (isBranchQuotaReached) {
+      setIsUpgradeModalOpen(true);
+      return;
+    }
+
+    if (!branchFormData.adminName.trim() || !branchFormData.adminEmail.trim() || !branchFormData.adminPassword.trim()) {
+      setBranchSaveError(isSw ? 'Jaza jina, barua pepe na nenosiri la meneja wa tawi' : 'Branch admin name, email and password are required');
+      return;
+    }
+
+    setBranchSaving(true);
+    setBranchSaveError(null);
+    try {
+      const created = await api.createBranch({
         name: branchFormData.name,
-        code: branchFormData.code || `BR-${branchFormData.region.substring(0, 3).toUpperCase()}-0${branches.length + 1}`,
-        type: branchFormData.type,
-        status: 'active',
+        code: branchFormData.code || undefined,
+        branch_type: branchFormData.type,
         region: branchFormData.region,
         district: branchFormData.district,
         address: branchFormData.address,
         phone: branchFormData.phone,
-        email: branchFormData.email || `branch${branches.length + 1}@duka.co.tz`,
-        managerStaffId: branchFormData.managerStaffId,
-        managerName: selectedManager ? `${selectedManager.name} (${selectedManager.role})` : (currentUser?.name || 'Assigned Manager'),
-        staffCount: 1,
-        activeRegistersCount: 1,
-        dailyGmvTzs: 0,
-        monthlyGmvTzs: 0,
-        stockCount: 0,
-        stockValuationTzs: 0,
-        traEfdSerial: branchFormData.traEfdSerial,
-        openingHours: branchFormData.openingHours,
-        notes: branchFormData.notes,
-        createdDate: new Date().toISOString().split('T')[0]
-      };
+        tra_efd_serial: branchFormData.traEfdSerial,
+        opening_hours: branchFormData.openingHours,
+        admin: {
+          name: branchFormData.adminName.trim(),
+          email: branchFormData.adminEmail.trim().toLowerCase(),
+          phone: branchFormData.adminPhone.trim(),
+          password: branchFormData.adminPassword,
+        },
+      });
+      const newBranch = mapBranch(created as Record<string, unknown>);
+      newBranch.notes = branchFormData.notes;
       setBranches(prev => [...prev, newBranch]);
       setIsAddBranchModalOpen(false);
+      setBranchFormData(prev => ({
+        ...prev,
+        name: '',
+        code: '',
+        address: '',
+        adminName: '',
+        adminEmail: '',
+        adminPassword: '',
+        notes: '',
+      }));
+    } catch (err) {
+      setBranchSaveError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBranchSaving(false);
     }
   };
 
@@ -368,17 +399,17 @@ export const BranchManagementView: React.FC<BranchManagementViewProps> = ({
             <div className="flex items-center justify-between text-xs">
               <span className="text-slate-300">{isSw ? 'Kiwango cha Matawi:' : 'Branch Quota:'}</span>
               <span className="font-extrabold text-amber-300">
-                {branches.length} / {maxBranchesAllowed >= 999 ? '∞ Unlimited' : maxBranchesAllowed}
+                {branches.length} / {maxBranchesAllowed}
               </span>
             </div>
             {/* Progress bar */}
             <div className="w-full bg-white/20 h-2 rounded-full overflow-hidden">
               <div 
                 className={`h-full rounded-full transition-all ${
-                  isBranchQuotaReached && maxBranchesAllowed < 999 ? 'bg-rose-400' : 'bg-emerald-400'
+                  isBranchQuotaReached ? 'bg-rose-400' : 'bg-emerald-400'
                 }`}
                 style={{ 
-                  width: `${Math.min(100, (branches.length / (maxBranchesAllowed >= 999 ? 10 : maxBranchesAllowed)) * 100)}%` 
+                  width: `${Math.min(100, (branches.length / Math.max(1, maxBranchesAllowed)) * 100)}%` 
                 }}
               />
             </div>
@@ -393,6 +424,7 @@ export const BranchManagementView: React.FC<BranchManagementViewProps> = ({
                 <span>{isSw ? 'Boresha Mpango' : 'Upgrade Plan'}</span>
               </button>
 
+              {canCreateBranches && (
               <button
                 id="btn-add-branch-top"
                 onClick={() => {
@@ -400,6 +432,7 @@ export const BranchManagementView: React.FC<BranchManagementViewProps> = ({
                     setIsUpgradeModalOpen(true);
                   } else {
                     setEditingBranch(null);
+                    setBranchSaveError(null);
                     setBranchFormData({
                       name: '',
                       code: '',
@@ -410,6 +443,10 @@ export const BranchManagementView: React.FC<BranchManagementViewProps> = ({
                       phone: '+255 ',
                       email: '',
                       managerStaffId: '',
+                      adminName: '',
+                      adminEmail: '',
+                      adminPhone: '+255 ',
+                      adminPassword: '',
                       traEfdSerial: `EFD-TZ-2026-${Math.floor(1000 + Math.random() * 9000)}`,
                       openingHours: '08:00 - 20:00',
                       notes: ''
@@ -422,6 +459,7 @@ export const BranchManagementView: React.FC<BranchManagementViewProps> = ({
                 <Plus className="w-3.5 h-3.5" />
                 <span>{isSw ? 'Tawi Jipya' : 'Add Branch'}</span>
               </button>
+              )}
             </div>
           </div>
         </div>
@@ -995,8 +1033,8 @@ export const BranchManagementView: React.FC<BranchManagementViewProps> = ({
               </h3>
               <p className="text-xs sm:text-sm text-[#605E5C] mt-1">
                 {isSw
-                  ? 'Kila mpango umelenga ukuaji wa duka lako. Kifurushi cha 2 (TSh 60,000) kinakupa matawi 2 (Tawi Kuu + 1 Sub-Branch), huku Enterprise ikikupa matawi bila kikomo.'
-                  : 'Choose the exact subscription tier suited for your retail footprint. Package 2 (TZS 60,000) unlocks dual-branch isolation with 5 staff, while Enterprise unlocks limitless multi-location scaling.'}
+                  ? 'Mipango 3 yote ni ya malipo — chagua kulingana na idadi ya matawi (1, 2, au 3). Hakuna mpango wa bure.'
+                  : 'All three plans are paid — pick by branch count (1, 2, or 3). No free tier.'}
               </p>
             </div>
 
@@ -1024,6 +1062,9 @@ export const BranchManagementView: React.FC<BranchManagementViewProps> = ({
 
                     <div>
                       <div className="text-xs font-bold text-[#6264A7] uppercase">{plan.name}</div>
+                      <span className="inline-block mt-1.5 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-100">
+                        {planBranchLabel(plan, isSw)}
+                      </span>
                       <div className="mt-2 flex items-baseline gap-1">
                         <span className="text-3xl font-extrabold text-[#323130]">
                           TSh {plan.priceMonthlyTzs.toLocaleString()}
@@ -1035,13 +1076,13 @@ export const BranchManagementView: React.FC<BranchManagementViewProps> = ({
                         <div className="flex items-center justify-between">
                           <span className="text-[#605E5C]">{isSw ? 'Upeo wa Matawi:' : 'Max Branches:'}</span>
                           <strong className="text-[#323130] font-bold">
-                            {plan.maxBranches >= 999 ? (isSw ? 'Bila Kikomo (Unlimited)' : 'Unlimited') : `${plan.maxBranches} ${isSw ? 'Matawi' : 'Branches'}`}
+                            {`${plan.maxBranches} ${isSw ? 'Matawi' : 'Branches'}`}
                           </strong>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-[#605E5C]">{isSw ? 'Wafanyakazi:' : 'Staff Accounts:'}</span>
                           <strong className="text-[#323130] font-bold">
-                            {plan.maxStaff >= 999 ? 'Unlimited' : `${plan.maxStaff} Staff`}
+                            {`${plan.maxStaff} Staff`}
                           </strong>
                         </div>
                       </div>
@@ -1171,22 +1212,90 @@ export const BranchManagementView: React.FC<BranchManagementViewProps> = ({
                   />
                 </div>
 
-                <div>
-                  <label className="font-bold text-[#323130] block mb-1">
-                    {isSw ? 'Meneja wa Tawi' : 'Branch Manager'}
-                  </label>
-                  <select
-                    value={branchFormData.managerStaffId}
-                    onChange={(e) => setBranchFormData(prev => ({ ...prev, managerStaffId: e.target.value }))}
-                    className="w-full px-3 py-2 bg-white border border-[#C8C6C4] rounded-lg outline-none"
-                  >
-                    <option value="">{isSw ? '-- Chagua Meneja --' : '-- Select Staff Member --'}</option>
-                    {staffMembers.map(s => (
-                      <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
-                    ))}
-                  </select>
-                </div>
+                {editingBranch ? (
+                  <div>
+                    <label className="font-bold text-[#323130] block mb-1">
+                      {isSw ? 'Meneja wa Tawi' : 'Branch Manager'}
+                    </label>
+                    <select
+                      value={branchFormData.managerStaffId}
+                      onChange={(e) => setBranchFormData(prev => ({ ...prev, managerStaffId: e.target.value }))}
+                      className="w-full px-3 py-2 bg-white border border-[#C8C6C4] rounded-lg outline-none"
+                    >
+                      <option value="">{isSw ? '-- Chagua Meneja --' : '-- Select Staff Member --'}</option>
+                      {staffMembers.map(s => (
+                        <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
               </div>
+
+              {!editingBranch && (
+                <div className="rounded-xl border border-[#6264A7]/25 bg-[#6264A7]/5 p-3 space-y-3">
+                  <p className="text-[11px] font-bold text-[#6264A7] uppercase tracking-wide">
+                    {isSw ? 'Akaunti ya Meneja wa Tawi (Ingia & Kazi)' : 'Branch Admin Login (isolated workspace)'}
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2">
+                      <label className="font-bold text-[#323130] block mb-1">
+                        {isSw ? 'Jina la Meneja *' : 'Admin Full Name *'}
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={branchFormData.adminName}
+                        onChange={(e) => setBranchFormData(prev => ({ ...prev, adminName: e.target.value }))}
+                        className="w-full px-3 py-2 bg-white border border-[#C8C6C4] rounded-lg outline-none"
+                        placeholder={isSw ? 'Mfano: Mwajuma Rashid' : 'e.g. Mwajuma Rashid'}
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold text-[#323130] block mb-1">
+                        {isSw ? 'Barua Pepe ya Kuingia *' : 'Login Email *'}
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={branchFormData.adminEmail}
+                        onChange={(e) => setBranchFormData(prev => ({ ...prev, adminEmail: e.target.value }))}
+                        className="w-full px-3 py-2 bg-white border border-[#C8C6C4] rounded-lg outline-none"
+                        placeholder="manager@duka.co.tz"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold text-[#323130] block mb-1">
+                        {isSw ? 'Simu' : 'Phone'}
+                      </label>
+                      <input
+                        type="text"
+                        value={branchFormData.adminPhone}
+                        onChange={(e) => setBranchFormData(prev => ({ ...prev, adminPhone: e.target.value }))}
+                        className="w-full px-3 py-2 bg-white border border-[#C8C6C4] rounded-lg outline-none"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="font-bold text-[#323130] block mb-1">
+                        {isSw ? 'Nenosiri la Kuanza *' : 'Initial Password *'}
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        minLength={6}
+                        value={branchFormData.adminPassword}
+                        onChange={(e) => setBranchFormData(prev => ({ ...prev, adminPassword: e.target.value }))}
+                        className="w-full px-3 py-2 bg-white border border-[#C8C6C4] rounded-lg outline-none"
+                        placeholder={isSw ? 'Angalau herufi 6' : 'At least 6 characters'}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-[#605E5C]">
+                    {isSw
+                      ? 'Meneja ataingia kwa barua pepe hii na kuona data ya tawi hili pekee. Mmiliki anaona matawi yote.'
+                      : 'This manager logs in with this email and sees only this branch. The owner can track all branches.'}
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="font-bold text-[#323130] block mb-1">
@@ -1228,19 +1337,31 @@ export const BranchManagementView: React.FC<BranchManagementViewProps> = ({
                 </div>
               </div>
 
+              {branchSaveError && (
+                <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs px-3 py-2">
+                  {branchSaveError}
+                </div>
+              )}
+
               <div className="pt-4 border-t border-[#EDEBE9] flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setIsAddBranchModalOpen(false)}
                   className="px-4 py-2 rounded-lg border border-[#C8C6C4] text-[#323130] font-bold hover:bg-[#F8F8F8]"
+                  disabled={branchSaving}
                 >
                   {isSw ? 'Ghairi' : 'Cancel'}
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-lg bg-[#6264A7] hover:bg-[#525492] text-white font-bold shadow-xs cursor-pointer"
+                  disabled={branchSaving}
+                  className="px-5 py-2 rounded-lg bg-[#6264A7] hover:bg-[#525492] text-white font-bold shadow-xs cursor-pointer disabled:opacity-60"
                 >
-                  {editingBranch ? (isSw ? 'Hifadhi Mabadiliko' : 'Save Changes') : (isSw ? 'Sajili Tawi Sasa' : 'Register Branch')}
+                  {branchSaving
+                    ? (isSw ? 'Inasajili...' : 'Creating...')
+                    : editingBranch
+                      ? (isSw ? 'Hifadhi Mabadiliko' : 'Save Changes')
+                      : (isSw ? 'Sajili Tawi Sasa' : 'Register Branch')}
                 </button>
               </div>
             </form>
@@ -1453,54 +1574,52 @@ export const BranchManagementView: React.FC<BranchManagementViewProps> = ({
                 <strong>{isSw ? 'Kikomo cha Matawi Kimefikiwa:' : 'Branch Quota Limit Reached:'}</strong>
                 <p className="mt-0.5">
                   {isSw 
-                    ? `Mpango wa ${currentPlan.name} (TSh ${currentPlan.priceMonthlyTzs.toLocaleString()}/mwezi) unaruhusu hadi matawi ${currentPlan.maxBranches}. Ili kufungua matawi zaidi au bila kikomo (Unlimited), chagua mpango wa Enterprise.`
-                    : `Your current plan allows up to ${currentPlan.maxBranches} branches. Upgrade to Enterprise Chain to unlock unlimited branches and dedicated logistic pipelines.`}
+                    ? `Mpango wa ${currentPlan.name} (TSh ${currentPlan.priceMonthlyTzs.toLocaleString()}/mwezi) unaruhusu hadi matawi ${currentPlan.maxBranches}. Boresha mpango ili kuongeza idadi ya matawi.`
+                    : `Your current plan allows up to ${currentPlan.maxBranches} branch(es). Upgrade to add more branches.`}
                 </p>
               </div>
             </div>
 
             <div className="space-y-3">
-              {/* Option: Biashara Pro (Package 2) */}
-              <div 
-                onClick={() => handleSelectPlanTier('biashara_pro')}
-                className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center justify-between ${
-                  currentPlanTier === 'biashara_pro' ? 'border-[#6264A7] bg-blue-50/40' : 'border-[#E1DFDD] hover:border-slate-400'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-extrabold text-sm text-[#323130]">Biashara Pro (Package 2)</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">2 Matawi</span>
+              {DEFAULT_SAAS_PLANS.filter(plan => plan.maxBranches > currentPlan.maxBranches).map(plan => {
+                const isSelected = currentPlanTier === plan.tier;
+                const isEnterprise = plan.tier === 'enterprise_chain';
+                return (
+                  <div
+                    key={plan.tier}
+                    onClick={() => handleSelectPlanTier(plan.tier)}
+                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center justify-between ${
+                      isEnterprise
+                        ? 'border-amber-500 bg-amber-50/20 hover:bg-amber-50/50 ring-2 ring-amber-500/20'
+                        : isSelected
+                        ? 'border-[#6264A7] bg-blue-50/40'
+                        : 'border-[#E1DFDD] hover:border-slate-400'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-extrabold text-sm text-[#323130]">{plan.name}</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
+                          isEnterprise ? 'bg-amber-200 text-amber-900' : 'bg-teal-100 text-teal-800'
+                        }`}>
+                          {planBranchLabel(plan, isSw)}
+                        </span>
+                      </div>
+                      <div className="text-xs text-[#605E5C] mt-0.5">
+                        {isSw
+                          ? `Hadi matawi ${plan.maxBranches} • Wafanyakazi ${plan.maxStaff}`
+                          : `Up to ${plan.maxBranches} branch(es) • ${plan.maxStaff} staff`}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0 ml-3">
+                      <div className="font-extrabold text-base text-[#107C10]">
+                        TSh {plan.priceMonthlyTzs.toLocaleString()}
+                      </div>
+                      <div className="text-[10px] text-[#605E5C]">/{isSw ? 'mwezi' : 'mo'}</div>
+                    </div>
                   </div>
-                  <div className="text-xs text-[#605E5C] mt-0.5">
-                    {isSw ? 'Tawi Kuu + 1 Sub-Branch • Wafanyakazi 5 • POS & TRA' : 'HQ + 1 Sub-branch • 5 Staff accounts • Full POS & TRA'}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-extrabold text-base text-[#107C10]">TSh 60,000</div>
-                  <div className="text-[10px] text-[#605E5C]">/{isSw ? 'mwezi' : 'mo'}</div>
-                </div>
-              </div>
-
-              {/* Option: Enterprise Chain */}
-              <div 
-                onClick={() => handleSelectPlanTier('enterprise_chain')}
-                className="p-4 rounded-xl border-2 border-amber-500 bg-amber-50/20 hover:bg-amber-50/50 cursor-pointer transition-all flex items-center justify-between ring-2 ring-amber-500/20"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-extrabold text-sm text-[#323130]">Enterprise Chain (Minyororo)</span>
-                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-200 text-amber-900 uppercase">Unlimited</span>
-                  </div>
-                  <div className="text-xs text-[#605E5C] mt-0.5">
-                    {isSw ? 'Matawi Yasiyo na Kikomo • Uhamisho wa Stoo • Ripoti za Boss' : 'Unlimited Outlets • Inter-Branch Logistics • Boss Overview'}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-extrabold text-base text-[#107C10]">TSh 150,000</div>
-                  <div className="text-[10px] text-[#605E5C]">/{isSw ? 'mwezi' : 'mo'}</div>
-                </div>
-              </div>
+                );
+              })}
             </div>
 
             <div className="pt-3 border-t border-[#EDEBE9] flex items-center justify-between text-xs text-[#605E5C]">

@@ -17,7 +17,7 @@ import {
   type PlatformShowcaseItem,
 } from '@/lib/platformShowcase';
 import { useSaasPlans } from '@/context/SaasPlansContext';
-import { formatPlanPrice, planFeatures, planPeriod } from '@/lib/saasPlans';
+import { formatPlanPrice, planBranchLabel, planFeatures, planPeriod } from '@/lib/saasPlans';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { PwaInstallPrompt } from '@/components/ui/PwaInstallPrompt';
 
@@ -349,6 +349,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                   </span>
                 )}
                 <h3 className="font-serif font-bold text-xl">{isSw ? plan.nameSw : plan.name}</h3>
+                <span className="inline-block mt-2 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-100">
+                  {planBranchLabel(plan, isSw)}
+                </span>
                 <div className="mt-2 flex items-baseline gap-1">
                   <span className="text-2xl font-black">{formatPlanPrice(plan, isSw)}</span>
                   {!plan.contactUs && (

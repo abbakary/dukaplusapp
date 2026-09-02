@@ -369,7 +369,8 @@ export interface StaffMember {
   phone: string;
   active: boolean;
   joinedDate: string;
-  branch: string;
+  branch?: string;
+  branchId?: string;
   shift: string;
   avatarColor?: string;
   pinCode?: string;
@@ -519,6 +520,10 @@ export interface AuthUser {
   staffRole?: StaffRole;
   staffId?: string;
   branch?: string;
+  branchId?: string;
+  branchName?: string;
+  branchType?: 'main_hq' | 'sub_branch' | 'warehouse';
+  isBranchScoped?: boolean;
   shift?: string;
   permissions?: Partial<StaffPermissions>;
   businessType?: BusinessType;
@@ -534,7 +539,7 @@ export interface AuthUser {
   subscriptionExpiry?: string;
 }
 
-export type SaaSPlanTier = 'free_starter' | 'biashara_pro' | 'enterprise_chain';
+export type SaaSPlanTier = 'starter' | 'biashara_pro' | 'enterprise_chain';
 export type TenantStatus = 'active' | 'suspended' | 'pending_kyc' | 'grace_period';
 
 export interface TenantStore {

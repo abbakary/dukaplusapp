@@ -27,7 +27,7 @@ class AppConstants {
   static const double maxDiscountPct = 15.0;    // max cashier discount
 
   // SaaS plans
-  static const String planFree       = 'free_starter';
+  static const String planStarter   = 'starter';
   static const String planPro        = 'biashara_pro';
   static const String planEnterprise = 'enterprise_chain';
 

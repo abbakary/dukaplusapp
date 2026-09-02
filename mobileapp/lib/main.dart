@@ -45,7 +45,7 @@ class DukaApp extends ConsumerWidget {
     final locale  = ref.watch(localeProvider);
 
     return MaterialApp.router(
-      title:                      'Duka+',
+      title:                      'DukaPlus+',
       debugShowCheckedModeBanner: false,
       theme:                      AppTheme.light(businessType: bizType),
       locale:                     locale.l10n.locale,

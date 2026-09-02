@@ -217,7 +217,7 @@ export default function DukaPortal() {
   const [posResumeSaleId, setPosResumeSaleId] = useState<string | null>(null);
   const [posPreloadDraftId, setPosPreloadDraftId] = useState<string | null>(null);
   const [posTableLabel, setPosTableLabel] = useState<string | null>(null);
-  const [currentPlanTier, setCurrentPlanTier] = useState<SaaSPlanTier>('biashara_pro');
+  const [currentPlanTier, setCurrentPlanTier] = useState<SaaSPlanTier>('starter');
   const [subscriptionExpiry, setSubscriptionExpiry] = useState<string>(
     () => new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
   );
@@ -514,6 +514,12 @@ export default function DukaPortal() {
       }
       if (user.subscriptionExpiry) setSubscriptionExpiry(user.subscriptionExpiry);
       else if (user.plan) setCurrentPlanTier(user.plan);
+      const isOwnerWide = user.role === 'vendor_owner' || user.staffRole === 'Owner';
+      if (user.branchId && !isOwnerWide) {
+        setActiveBranchId(user.branchId);
+      } else {
+        setActiveBranchId('all');
+      }
       setActiveTab(options?.fromRegistration ? getDefaultWorkplaceTab(bt) : 'dashboard');
     }
   };
@@ -1357,7 +1363,7 @@ export default function DukaPortal() {
                         district: 'Kinondoni',
                         type: 'hardware',
                         status: 'active',
-                        plan: 'free_starter',
+                        plan: 'starter',
                         branchesCount: 1,
                         staffCount: 2,
                         tinNumber: '155-223-908',

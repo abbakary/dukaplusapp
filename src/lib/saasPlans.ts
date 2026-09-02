@@ -10,56 +10,57 @@ export interface PublicPlan extends SaaSPlan {
   featuresSw: string[];
 }
 
+/** Three paid tiers only — no free plan. */
 export const DEFAULT_PUBLIC_PLANS: PublicPlan[] = [
   {
-    id: 'plan-mwanzo',
-    tier: 'free_starter',
-    name: 'Mwanzo',
-    nameSw: 'Mwanzo',
-    priceMonthlyTzs: 39000,
-    priceYearlyTzs: 390000,
+    id: 'plan-starter',
+    tier: 'starter',
+    name: 'Plan 1 — Starter',
+    nameSw: 'Mpango 1 — Starter',
+    priceMonthlyTzs: 49000,
+    priceYearlyTzs: 490000,
     maxBranches: 1,
     maxStaff: 3,
     maxProducts: 500,
     features: ['POS & barcode', 'Inventory alerts', 'Customer CRM', 'Basic reports'],
     featuresSw: ['POS na barcode', 'Arifa za stoo', 'CRM ya wateja', 'Ripoti za msingi'],
-    tagEn: 'Single shop getting started',
-    tagSw: 'Duka moja linaloanza',
+    tagEn: 'Single branch — one shop',
+    tagSw: 'Tawi moja — duka moja',
     popular: false,
     activeSubscribersCount: 0,
   },
   {
     id: 'plan-pro',
     tier: 'biashara_pro',
-    name: 'Biashara Pro',
-    nameSw: 'Biashara Pro',
-    priceMonthlyTzs: 79000,
-    priceYearlyTzs: 790000,
-    maxBranches: 5,
-    maxStaff: 15,
+    name: 'Plan 2 — Biashara Pro',
+    nameSw: 'Mpango 2 — Biashara Pro',
+    priceMonthlyTzs: 99000,
+    priceYearlyTzs: 990000,
+    maxBranches: 2,
+    maxStaff: 10,
     maxProducts: 5000,
-    features: ['TRA EFD receipts', 'RBAC staff', 'AI insights', 'Multi-branch'],
-    featuresSw: ['Risiti TRA EFD', 'Mamlaka RBAC', 'Ushauri wa AI', 'Matawi mengi'],
-    tagEn: 'Growing businesses',
-    tagSw: 'Biashara inayokua',
+    features: ['TRA EFD receipts', 'RBAC staff', 'AI insights', '2 branches'],
+    featuresSw: ['Risiti TRA EFD', 'Mamlaka RBAC', 'Ushauri wa AI', 'Matawi 2'],
+    tagEn: 'Growing business — 2 branches',
+    tagSw: 'Biashara inayokua — matawi 2',
     popular: true,
     activeSubscribersCount: 0,
   },
   {
     id: 'plan-enterprise',
     tier: 'enterprise_chain',
-    name: 'Enterprise',
-    nameSw: 'Biashara Kubwa',
-    priceMonthlyTzs: 0,
-    priceYearlyTzs: 0,
-    maxBranches: 99,
-    maxStaff: 99,
+    name: 'Plan 3 — Enterprise',
+    nameSw: 'Mpango 3 — Biashara Kubwa',
+    priceMonthlyTzs: 249000,
+    priceYearlyTzs: 2490000,
+    maxBranches: 3,
+    maxStaff: 15,
     maxProducts: 99999,
-    features: ['Unlimited scale', 'API access', 'Dedicated support', 'Custom SLA'],
-    featuresSw: ['Ukubwa usio na kikomo', 'API', 'Msaada maalum', 'SLA maalum'],
-    tagEn: 'Store chains & groups',
-    tagSw: 'Minyororo ya maduka',
-    contactUs: true,
+    features: ['3 branches', 'API access', 'Dedicated support', 'Consolidated reports'],
+    featuresSw: ['Matawi 3', 'API', 'Msaada maalum', 'Ripoti za pamoja'],
+    tagEn: 'Store chains — 3 branches',
+    tagSw: 'Minyororo ya maduka — matawi 3',
+    contactUs: false,
     popular: false,
     activeSubscribersCount: 0,
   },
@@ -70,7 +71,8 @@ export function loadPublicPlans(): PublicPlan[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_PUBLIC_PLANS;
     const parsed = JSON.parse(raw) as PublicPlan[];
-    return parsed.length ? parsed : DEFAULT_PUBLIC_PLANS;
+    const cleaned = parsed.filter(p => p.tier !== 'free_starter');
+    return cleaned.length ? cleaned : DEFAULT_PUBLIC_PLANS;
   } catch {
     return DEFAULT_PUBLIC_PLANS;
   }
@@ -81,9 +83,10 @@ export function savePublicPlans(plans: PublicPlan[]): void {
 }
 
 export function mapApiPlan(raw: Record<string, unknown>): PublicPlan {
+  const tier = raw.tier === 'free_starter' ? 'starter' : (raw.tier as PublicPlan['tier']);
   return {
     id: String(raw.id),
-    tier: raw.tier as PublicPlan['tier'],
+    tier,
     name: String(raw.name),
     nameSw: String(raw.name_sw ?? raw.name),
     priceMonthlyTzs: Number(raw.price_monthly_tzs ?? 0),
@@ -128,9 +131,16 @@ export function planPeriod(isSw: boolean): string {
   return isSw ? '/mwezi' : '/mo';
 }
 
+export function planBranchLabel(plan: Pick<SaaSPlan, 'maxBranches'>, isSw: boolean): string {
+  const n = plan.maxBranches;
+  if (isSw) return n === 1 ? 'Tawi 1' : `Matawi ${n}`;
+  return n === 1 ? '1 branch' : `${n} branches`;
+}
+
 export function planLabel(tier: SaaSPlanTier, isSw: boolean, plans = loadPublicPlans()): string {
-  const p = plans.find(x => x.tier === tier);
-  if (!p) return tier;
+  const normalized = tier === 'free_starter' ? 'starter' : tier;
+  const p = plans.find(x => x.tier === normalized);
+  if (!p) return normalized;
   return isSw ? p.nameSw : p.name;
 }
 
@@ -180,4 +190,9 @@ export function addMonths(isoDate: string, months: number): string {
   const d = new Date(isoDate);
   d.setMonth(d.getMonth() + months);
   return d.toISOString().slice(0, 10);
+}
+
+export function normalizePlanTier(tier?: string | null): SaaSPlanTier {
+  if (!tier || tier === 'free_starter') return 'starter';
+  return tier as SaaSPlanTier;
 }

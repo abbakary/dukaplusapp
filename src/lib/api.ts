@@ -209,6 +209,9 @@ class ApiClient {
   createSupplier(data: Record<string, unknown>) { return this.request('/suppliers', { method: 'POST', body: JSON.stringify(data) }); }
   updateSupplier(id: string, data: Record<string, unknown>) { return this.request(`/suppliers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }); }
   getBranches() { return this.request<Array<Record<string, unknown>>>('/branches'); }
+  createBranch(data: Record<string, unknown>) {
+    return this.request<Record<string, unknown>>('/branches', { method: 'POST', body: JSON.stringify(data) });
+  }
   getStaff() { return this.request<Array<Record<string, unknown>>>('/staff'); }
   createStaff(data: Record<string, unknown>) { return this.request('/staff', { method: 'POST', body: JSON.stringify(data) }); }
   updateStaff(id: string, data: Record<string, unknown>) { return this.request(`/staff/${id}`, { method: 'PATCH', body: JSON.stringify(data) }); }

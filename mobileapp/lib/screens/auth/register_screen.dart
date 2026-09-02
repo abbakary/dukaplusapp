@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/constants/saas_plans.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../screens/legal/terms_of_service_screen.dart';
 import '../../core/legal/terms_of_service.dart';
 import '../../l10n/app_localizations.dart';
+import '../../widgets/plan_pricing_card.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -27,6 +29,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   int _step = 0;
   String _selectedType = 'retail';
+  String _selectedPlan = AppConstants.planStarter;
   bool _obscure = true;
   bool _acceptedTerms = false;
 
@@ -60,7 +63,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         'business_type': _selectedType,
         'tin_number':    _tinCtrl.text.trim(),
         'region':        'Dar es Salaam',
-        'plan_tier':     'free_starter',
+        'plan_tier':     _selectedPlan,
       });
     } catch (_) {
       if (mounted) {
@@ -94,7 +97,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       onPressed: _step == 0 ? () => context.go('/login') : () => setState(() => _step--),
                     ),
                     const Spacer(),
-                    Text(l10n.stepOfTotal(_step + 1, 3),
+                    Text(l10n.stepOfTotal(_step + 1, 4),
                       style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
                   ],
                 ),
@@ -102,10 +105,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 child: Row(
-                  children: List.generate(3, (i) => Expanded(
+                  children: List.generate(4, (i) => Expanded(
                     child: Container(
                       height: 4,
-                      margin: EdgeInsets.only(right: i < 2 ? 6 : 0),
+                      margin: EdgeInsets.only(right: i < 3 ? 6 : 0),
                       decoration: BoxDecoration(
                         color: i <= _step ? Colors.white : Colors.white.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(2),
@@ -130,7 +133,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         position: Tween<Offset>(begin: const Offset(0.05, 0), end: Offset.zero).animate(anim),
                         child: FadeTransition(opacity: anim, child: child),
                       ),
-                      child: _step == 0 ? _buildStep0(l10n) : _step == 1 ? _buildStep1(l10n) : _buildStep2(l10n, isLoading),
+                      child: _step == 0
+                          ? _buildStep0(l10n)
+                          : _step == 1
+                              ? _buildStep1(l10n)
+                              : _step == 2
+                                  ? _buildStep2Plans(l10n)
+                                  : _buildStep3Account(l10n, isLoading),
                     ),
                   ),
                 ),
@@ -255,10 +264,47 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     ),
   );
 
-  Widget _buildStep2(AppLocalizations l10n, bool isLoading) {
+  Widget _buildStep2Plans(AppLocalizations l10n) {
     final isSw = ref.watch(localeProvider) == AppLanguage.sw;
     return SingleChildScrollView(
-    key: const ValueKey(2),
+      key: const ValueKey(2),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.choosePlanTitle,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+          const SizedBox(height: 6),
+          Text(l10n.choosePlanHint,
+            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+          const SizedBox(height: 20),
+          ...SaasPlans.publicPlans.map((plan) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: PlanPricingCard(
+              plan: plan,
+              isSw: isSw,
+              selected: _selectedPlan == plan.tier,
+              onTap: () => setState(() => _selectedPlan = plan.tier),
+            ),
+          )),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: () => setState(() => _step = 3),
+              child: Text(l10n.continueLabel),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep3Account(AppLocalizations l10n, bool isLoading) {
+    final isSw = ref.watch(localeProvider) == AppLanguage.sw;
+    return SingleChildScrollView(
+    key: const ValueKey(3),
     padding: const EdgeInsets.all(20),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,

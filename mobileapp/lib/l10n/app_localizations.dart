@@ -68,6 +68,17 @@ class AppLocalizations {
   String get signOutConfirm => t('Are you sure you want to sign out?', 'Una uhakika unataka kuondoka?');
 
   String get registerBusiness => t('Register your business', 'Sajili biashara yako');
+  String get choosePlanTitle => t('Choose your plan', 'Chagua mpango wako');
+  String get choosePlanHint => t(
+    'All plans are paid — pick by branches you need (1, 2, or 3).',
+    'Mipango yote ni ya malipo — chagua kulingana na matawi (1, 2, au 3).',
+  );
+  String get pricingSectionTitle => t('Simple pricing', 'Bei rahisi');
+  String get pricingSectionHint => t(
+    'No free tier — transparent monthly plans.',
+    'Hakuna mpango wa bure — bei wazi kwa mwezi.',
+  );
+  String get planStep => t('Plan', 'Mpango');
   String get stepOf => t('Step', 'Hatua');
   String get ofLabel => t('of', 'kati ya');
   String get accountStep => t('Account', 'Akaunti');

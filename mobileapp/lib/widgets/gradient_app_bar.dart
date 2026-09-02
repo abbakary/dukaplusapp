@@ -23,9 +23,12 @@ class GradientAppBar extends ConsumerWidget implements PreferredSizeWidget {
     this.bottom,
   });
 
+  static const _subtitleToolbarHeight = 68.0;
+
   @override
   Size get preferredSize => Size.fromHeight(
-    kToolbarHeight + (subtitle != null ? 18 : 0) + (bottom?.preferredSize.height ?? 0),
+    (subtitle != null ? _subtitleToolbarHeight : kToolbarHeight) +
+        (bottom?.preferredSize.height ?? 0),
   );
 
   @override
@@ -46,6 +49,7 @@ class GradientAppBar extends ConsumerWidget implements PreferredSizeWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               AppBar(
+                toolbarHeight: subtitle != null ? _subtitleToolbarHeight : kToolbarHeight,
                 backgroundColor: Colors.transparent,
                 elevation: 0,
                 scrolledUnderElevation: 0,

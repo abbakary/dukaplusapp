@@ -16,6 +16,11 @@ interface ApiUser {
   tin_number?: string;
   license_number?: string;
   staff_role?: string;
+  branch?: string;
+  branch_id?: string;
+  branch_name?: string;
+  branch_type?: string;
+  is_branch_scoped?: boolean;
   permissions?: Partial<StaffPermissions>;
   language?: string;
   status?: string;
@@ -36,6 +41,11 @@ export function mapApiUserToAuthUser(apiUser: ApiUser): AuthUser {
     staffRole: apiUser.staff_role as AuthUser['staffRole'],
     staffId: apiUser.staff_id,
     staff_id: apiUser.staff_id,
+    branch: apiUser.branch_name ?? apiUser.branch,
+    branchId: apiUser.branch_id,
+    branchName: apiUser.branch_name,
+    branchType: apiUser.branch_type as AuthUser['branchType'],
+    isBranchScoped: Boolean(apiUser.is_branch_scoped),
     permissions: apiUser.permissions,
     status: (apiUser.status as AuthUser['status']) || 'approved',
     tinNumber: apiUser.tin_number,

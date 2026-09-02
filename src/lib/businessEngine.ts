@@ -746,13 +746,14 @@ export function getDefaultUnit(type?: string): string {
 
 /** Package entitlements — branches hidden on starter */
 export const PLAN_ENTITLEMENTS: Record<string, { max_branches: number; max_users: number; features: string[] }> = {
-  free_starter: { max_branches: 1, max_users: 3, features: ['inventory', 'pos', 'reports', 'settings'] },
-  biashara_pro: { max_branches: 3, max_users: 10, features: ['inventory', 'pos', 'branches', 'customers', 'suppliers', 'reports', 'bi', 'settings'] },
-  enterprise_chain: { max_branches: 10, max_users: 30, features: ['inventory', 'pos', 'branches', 'transfers', 'consolidated_reports', 'bi', 'ai_assistant', 'audit'] },
+  starter: { max_branches: 1, max_users: 3, features: ['inventory', 'pos', 'reports', 'settings'] },
+  biashara_pro: { max_branches: 2, max_users: 10, features: ['inventory', 'pos', 'branches', 'customers', 'suppliers', 'reports', 'bi', 'settings'] },
+  enterprise_chain: { max_branches: 3, max_users: 15, features: ['inventory', 'pos', 'branches', 'transfers', 'consolidated_reports', 'bi', 'ai_assistant', 'audit'] },
 };
 
 export function planHasFeature(plan: string, feature: string): boolean {
-  const ent = PLAN_ENTITLEMENTS[plan] ?? PLAN_ENTITLEMENTS.free_starter;
+  const normalized = plan === 'free_starter' ? 'starter' : plan;
+  const ent = PLAN_ENTITLEMENTS[normalized] ?? PLAN_ENTITLEMENTS.starter;
   return ent.features.includes(feature);
 }
 

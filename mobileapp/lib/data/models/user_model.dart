@@ -63,6 +63,9 @@ class AuthUser {
   final String? businessName;
   final String? businessType;
   final String? branch;
+  final String? branchId;
+  final String? branchName;
+  final bool isBranchScoped;
   final String? plan;
   final String? tinNumber;
   final String? staffId;
@@ -80,6 +83,9 @@ class AuthUser {
     this.businessName,
     this.businessType,
     this.branch,
+    this.branchId,
+    this.branchName,
+    this.isBranchScoped = false,
     this.plan,
     this.tinNumber,
     this.staffId,
@@ -97,7 +103,10 @@ class AuthUser {
     businessId:   j['business_id']?.toString() ?? j['id']?.toString(),
     businessName: j['business_name']?.toString(),
     businessType: j['business_type']?.toString(),
-    branch:       j['branch']?.toString(),
+    branch:       j['branch']?.toString() ?? j['branch_name']?.toString(),
+    branchId:     j['branch_id']?.toString(),
+    branchName:   j['branch_name']?.toString(),
+    isBranchScoped: j['is_branch_scoped'] == true,
     plan:         j['plan']?.toString(),
     tinNumber:    j['tin_number']?.toString(),
     staffId:      j['staff_id']?.toString(),
@@ -117,6 +126,7 @@ class AuthUser {
   bool get isOwner      => role == UserRole.vendorOwner;
   bool get isStaff      => role == UserRole.vendorStaff;
   bool get isSuperAdmin => role == UserRole.superAdmin;
+  bool get isTenantWide => isOwner || staffRole == StaffRole.owner;
   bool get isCashier    => staffRole == StaffRole.cashier;
   bool get isManager    => staffRole == StaffRole.manager || role == UserRole.vendorOwner;
 

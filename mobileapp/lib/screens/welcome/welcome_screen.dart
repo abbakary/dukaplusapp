@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/locale_provider.dart';
+import '../../core/constants/saas_plans.dart';
 import '../../widgets/app_brand_logo.dart';
+import '../../widgets/plan_pricing_card.dart';
 
 const _teal  = Color(0xFF0D9488);
 const _navy  = Color(0xFF0F2347);
@@ -120,6 +122,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
               l10n:      l10n,
               bottomPad: botPad,
               isCompact: isCompact,
+              isSw:      ref.watch(localeProvider) == AppLanguage.sw,
             ),
           ],
         ),
@@ -313,9 +316,11 @@ class _CtaSection extends StatelessWidget {
   final AppLocalizations l10n;
   final double bottomPad;
   final bool   isCompact;
+  final bool   isSw;
 
   const _CtaSection({
     required this.l10n, required this.bottomPad, required this.isCompact,
+    required this.isSw,
   });
 
   @override
@@ -335,6 +340,33 @@ class _CtaSection extends StatelessWidget {
         children: [
           // Feature grid — fixed-height, no expansion
           _FeatureGrid(l10n: l10n, compact: isCompact),
+          SizedBox(height: isCompact ? 16 : 20),
+
+          // Pricing strip
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(l10n.pricingSectionTitle,
+              style: const TextStyle(
+                fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF1A2A4A))),
+          ),
+          const SizedBox(height: 4),
+          Text(l10n.pricingSectionHint,
+            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), height: 1.35)),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: isCompact ? 148 : 156,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: SaasPlans.publicPlans.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (_, i) => PlanPricingCard(
+                plan: SaasPlans.publicPlans[i],
+                isSw: isSw,
+                compact: true,
+                onTap: () => GoRouter.of(context).go('/register'),
+              ),
+            ),
+          ),
           SizedBox(height: isCompact ? 16 : 20),
 
           // Get started

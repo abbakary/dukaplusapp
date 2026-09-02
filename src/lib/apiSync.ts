@@ -137,14 +137,16 @@ export function mapBranch(b: Record<string, unknown>): StoreBranch {
     address: (b.address as string) ?? '',
     phone: (b.phone as string) ?? '',
     email: '',
-    staffCount: 0,
+    managerStaffId: (b.manager_staff_id as string) ?? undefined,
+    managerName: (b.manager_name as string) ?? undefined,
+    staffCount: Number(b.staff_count ?? 0),
     activeRegistersCount: 1,
     dailyGmvTzs: 0,
     monthlyGmvTzs: 0,
     stockCount: 0,
     stockValuationTzs: 0,
-    traEfdSerial: '',
-    openingHours: '08:00 - 20:00',
+    traEfdSerial: (b.tra_efd_serial as string) ?? '',
+    openingHours: (b.opening_hours as string) ?? '08:00 - 20:00',
     createdDate: String(b.created_at ?? '').slice(0, 10),
   };
 }
@@ -223,6 +225,7 @@ export function resolveStaffPermissions(
 
 export function mapStaff(s: Record<string, unknown>): StaffMember {
   const role = (s.role as StaffMember['role']) ?? 'Cashier';
+  const branchName = (s.branch_name as string) ?? undefined;
   return {
     id: s.id as string,
     name: s.name as string,
@@ -231,7 +234,8 @@ export function mapStaff(s: Record<string, unknown>): StaffMember {
     phone: (s.phone as string) ?? '',
     active: Boolean(s.active ?? true),
     joinedDate: new Date().toISOString().slice(0, 10),
-    branch: 'HQ',
+    branch: branchName ?? 'HQ',
+    branchId: (s.branch_id as string) ?? undefined,
     shift: 'Day',
     todaySalesCount: 0,
     todayRevenueTzs: 0,
@@ -328,7 +332,7 @@ export function mapAdminTenant(t: Record<string, unknown>): TenantStore {
     type: (t.business_type as TenantStore['type']) ?? 'retail',
     region: (t.region as string) ?? '',
     district: (t.district as string) ?? '',
-    plan: (t.plan as TenantStore['plan']) ?? 'biashara_pro',
+    plan: (t.plan as TenantStore['plan']) ?? 'starter',
     status: (t.status as TenantStore['status']) ?? 'active',
     traEfdDeviceSerial: (t.tra_efd_serial as string) ?? '',
     tinNumber: (t.tin_number as string) ?? '',

@@ -14,7 +14,7 @@ class ShellInsets {
   /// Bottom padding for scrollable content so the last row clears a screen FAB.
   static double scrollBottom(BuildContext context, {bool withFab = false}) {
     final fab = withFab ? fabSize + fabMargin : 0;
-    return fab + fabMargin;
+    return navBarHeight + safeBottom(context) + fabMargin + fab;
   }
 
   static EdgeInsets listPadding(BuildContext context, {bool withFab = false}) =>

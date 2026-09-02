@@ -16,7 +16,7 @@ import { api } from '@/lib/api';
 import { loginAndLoadUser, mapApiUserToAuthUser, persistAuthUser } from '@/lib/authBridge';
 import { formatApiError } from '@/lib/formatApiError';
 import { useSaasPlans } from '@/context/SaasPlansContext';
-import { formatPlanPrice, planFeatures, planPeriod } from '@/lib/saasPlans';
+import { formatPlanPrice, planBranchLabel, planFeatures, planPeriod } from '@/lib/saasPlans';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { TermsAcceptanceCheckbox } from '@/components/v1/TermsOfServiceView';
 import { termsMustAcceptError } from '@/lib/termsOfService';
@@ -56,7 +56,7 @@ export const PublicRegisterWizardView: React.FC<PublicRegisterWizardViewProps> =
   const [regPassword, setRegPassword] = useState('');
   const [regPasswordConfirm, setRegPasswordConfirm] = useState('');
   const [businessType, setBusinessType] = useState<BusinessType>(initialBusinessType ?? 'retail');
-  const [selectedPlan, setSelectedPlan] = useState<SaaSPlanTier>(initialPlan ?? 'biashara_pro');
+  const [selectedPlan, setSelectedPlan] = useState<SaaSPlanTier>(initialPlan ?? 'starter');
   const [businessName, setBusinessName] = useState('');
   const [location, setLocation] = useState('Kariakoo, Dar es Salaam');
   const [tinNumber, setTinNumber] = useState('');
@@ -214,8 +214,8 @@ export const PublicRegisterWizardView: React.FC<PublicRegisterWizardViewProps> =
               <h2 className="font-bold text-lg">{isSw ? 'Chagua kifurushi cha usajili' : 'Choose your subscription plan'}</h2>
               <p className="text-sm text-slate-500">
                 {isSw
-                  ? 'Bei inaonyeshwa kulingana na mipango ya sasa — inasimamiwa na mtoa huduma.'
-                  : 'Pricing reflects current provider-managed packages.'}
+                  ? 'Mipango 3 yote ni ya malipo — chagua kulingana na idadi ya matawi unayohitaji (1, 2, au 3).'
+                  : 'All three plans are paid — choose based on how many branches you need (1, 2, or 3).'}
               </p>
               <div className="space-y-3">
                 {plans.map(plan => (
@@ -231,6 +231,9 @@ export const PublicRegisterWizardView: React.FC<PublicRegisterWizardViewProps> =
                       <div>
                         <div className="font-bold text-slate-900">{isSw ? plan.nameSw : plan.name}</div>
                         <div className="text-xs text-slate-500 mt-0.5">{isSw ? plan.tagSw : plan.tagEn}</div>
+                        <span className="inline-block mt-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-teal-50 text-teal-800">
+                          {planBranchLabel(plan, isSw)}
+                        </span>
                       </div>
                       <div className="text-right">
                         <div className="font-black text-teal-700">{formatPlanPrice(plan, isSw)}</div>

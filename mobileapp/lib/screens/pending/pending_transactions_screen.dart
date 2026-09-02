@@ -84,7 +84,7 @@ class PendingTransactionsScreen extends ConsumerWidget {
 
             return ListView.builder(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
+              padding: ShellInsets.listPadding(context),
               itemCount: rows.length,
               itemBuilder: (context, index) {
                 final row = rows[index];
@@ -102,6 +102,7 @@ class PendingTransactionsScreen extends ConsumerWidget {
                     return const SizedBox(height: 8);
                   case _PendingRowKind.draft:
                     return Padding(
+                      key: ValueKey('draft-${drafts[row.index].id}'),
                       padding: const EdgeInsets.only(bottom: 10),
                       child: _DraftCard(draft: drafts[row.index]),
                     );
@@ -113,20 +114,27 @@ class PendingTransactionsScreen extends ConsumerWidget {
                     return const SizedBox(height: 8);
                   case _PendingRowKind.api:
                     return Padding(
+                      key: ValueKey('sale-${pendingApi[row.index].id}'),
                       padding: const EdgeInsets.only(bottom: 10),
                       child: _PendingSaleCard(sale: pendingApi[row.index]),
+                    );
+                  case _PendingRowKind.footer:
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 6, bottom: 8),
+                      child: OutlinedButton.icon(
+                        onPressed: () => context.go('/pos'),
+                        icon: const Icon(Icons.point_of_sale_rounded, size: 18),
+                        label: Text(l10n.openPos),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(48),
+                          side: BorderSide(color: AppColors.primary.withValues(alpha: 0.45)),
+                        ),
+                      ),
                     );
                 }
               },
             );
           },
-        ),
-      ),
-      floatingActionButton: ShellFab(
-        child: FloatingActionButton.extended(
-          onPressed: () => context.go('/pos'),
-          icon: const Icon(Icons.point_of_sale_rounded),
-          label: Text(l10n.openPos),
         ),
       ),
     );
@@ -142,6 +150,7 @@ enum _PendingRowKind {
   apiHeader,
   apiSpacer,
   api,
+  footer,
 }
 
 class _PendingRow {
@@ -167,6 +176,7 @@ List<_PendingRow> _pendingRows(int draftCount, int apiCount) {
       rows.add(_PendingRow(_PendingRowKind.api, i));
     }
   }
+  rows.add(const _PendingRow(_PendingRowKind.footer));
   return rows;
 }
 
@@ -515,90 +525,37 @@ class _PendingSaleCard extends ConsumerWidget {
 
   Future<void> _quickComplete(BuildContext context, WidgetRef ref) async {
     final l10n = ref.read(appLocalizationsProvider);
-    final refCtrl = TextEditingController();
     final method = sale.payments.isNotEmpty ? sale.payments.first.method : 'cash';
     final methodLabel = l10n.paymentMethodLabel(method);
 
-    final confirmed = await showModalBottomSheet<bool>(
+    final reference = await showModalBottomSheet<String?>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(l10n.quickComplete,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 6),
-              Text('#${sale.receiptNumber} · ${AppFormatters.tsh(sale.total)}',
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-              if (sale.customerName != null) ...[
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(Icons.person_outline, size: 16),
-                    const SizedBox(width: 6),
-                    Text(sale.customerName!,
-                        style: const TextStyle(fontWeight: FontWeight.w600)),
-                  ],
-                ),
-              ],
-              const SizedBox(height: 12),
-              Text(l10n.paymentLabel(methodLabel.toUpperCase(), AppFormatters.tsh(sale.total)),
-                  style: const TextStyle(fontSize: 13)),
-              const SizedBox(height: 12),
-              TextField(
-                controller: refCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.paymentReference,
-                  hintText: 'M-Pesa code / receipt #',
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: Text(l10n.cancel),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      child: Text(l10n.complete),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: MediaQuery.of(ctx).padding.bottom),
-            ],
-          ),
-        ),
+      builder: (ctx) => _QuickCompleteSheet(
+        sale: sale,
+        methodLabel: methodLabel,
+        l10n: l10n,
       ),
     );
 
-    final reference = refCtrl.text.trim();
-    refCtrl.dispose();
-    if (confirmed != true || !context.mounted) return;
+    if (!context.mounted || reference == null) return;
 
     try {
       final api = ref.read(apiClientProvider);
       await api.finalizeSale(sale.id, {
-        'payments': _paymentsForFinalize(sale, reference: reference),
+        'payments': _paymentsForFinalize(
+          sale,
+          reference: reference.isEmpty ? null : reference,
+        ),
         if (sale.customerId != null) 'customer_id': sale.customerId,
         if (sale.customerName != null) 'customer_name': sale.customerName,
       });
-      ref.read(salesRefreshProvider.notifier).state++;
+      if (!context.mounted) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(salesRefreshProvider.notifier).state++;
+      });
       if (context.mounted) {
         final l10nDone = ref.read(appLocalizationsProvider);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -649,7 +606,7 @@ class _PendingSaleCard extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  sale.status.name.replaceAll('_', ' ').toUpperCase(),
+                  _statusLabel(sale.status, l10n),
                   style: const TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.w800,
@@ -680,29 +637,157 @@ class _PendingSaleCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    await resumeSaleInPos(ref, sale);
-                    if (context.mounted) context.go('/pos');
-                  },
-                  icon: const Icon(Icons.edit_outlined, size: 16),
-                  label: Text(l10n.resumeInPos),
-                ),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                await resumeSaleInPos(ref, sale);
+                if (context.mounted) context.go('/pos');
+              },
+              icon: const Icon(Icons.edit_outlined, size: 16),
+              label: Text(l10n.resumeInPos),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(44),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => _quickComplete(context, ref),
-                  icon: const Icon(Icons.bolt_rounded, size: 16),
-                  label: Text(l10n.quickComplete),
-                ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _quickComplete(context, ref),
+              icon: const Icon(Icons.payment_rounded, size: 16),
+              label: Text(l10n.quickComplete),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(44),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
               ),
-            ],
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+String _statusLabel(SaleStatus status, AppLocalizations l10n) {
+  switch (status) {
+    case SaleStatus.pendingCompletion:
+      return l10n.pending.toUpperCase();
+    case SaleStatus.requiresAttention:
+      return l10n.isSw ? 'INAHITAJI UMAKINI' : 'NEEDS ATTENTION';
+    case SaleStatus.readyToComplete:
+      return l10n.isSw ? 'TAYARI KULIPA' : 'READY TO PAY';
+    default:
+      return status.name.replaceAll('_', ' ').toUpperCase();
+  }
+}
+
+class _QuickCompleteSheet extends StatefulWidget {
+  final SaleTransaction sale;
+  final String methodLabel;
+  final AppLocalizations l10n;
+
+  const _QuickCompleteSheet({
+    required this.sale,
+    required this.methodLabel,
+    required this.l10n,
+  });
+
+  @override
+  State<_QuickCompleteSheet> createState() => _QuickCompleteSheetState();
+}
+
+class _QuickCompleteSheetState extends State<_QuickCompleteSheet> {
+  late final TextEditingController _referenceCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _referenceCtrl = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _referenceCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = widget.l10n;
+    final sale = widget.sale;
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.quickComplete,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 6),
+              Text('#${sale.receiptNumber} · ${AppFormatters.tsh(sale.total)}',
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+              if (sale.customerName != null) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.person_outline, size: 16),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(sale.customerName!,
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 12),
+              Text(
+                l10n.paymentLabel(
+                  widget.methodLabel.toUpperCase(),
+                  AppFormatters.tsh(sale.total),
+                ),
+                style: const TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _referenceCtrl,
+                decoration: InputDecoration(
+                  labelText: l10n.paymentReference,
+                  hintText: 'M-Pesa code / receipt #',
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(l10n.cancel),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () =>
+                          Navigator.pop(context, _referenceCtrl.text.trim()),
+                      child: Text(l10n.complete),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: MediaQuery.of(context).padding.bottom),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -1130,37 +1130,45 @@ class _CartSheet extends ConsumerWidget {
                                             Navigator.pop(context);
                                             _openPaymentSheet(context);
                                           },
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              const Icon(Icons.payment_rounded,
-                                                  color: Colors.white, size: 18),
-                                              const SizedBox(width: 6),
-                                              Flexible(
-                                                child: Column(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(l10n.payNow,
-                                                      style: const TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: 13,
-                                                        fontWeight: FontWeight.w700,
-                                                        letterSpacing: 0.1,
-                                                      )),
-                                                    Text(l10n.payNowHint,
-                                                      style: TextStyle(
-                                                        color: Colors.white.withValues(alpha: 0.88),
-                                                        fontSize: 9,
-                                                        fontWeight: FontWeight.w500,
+                                          child: SizedBox(
+                                            height: 48,
+                                            width: double.infinity,
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              crossAxisAlignment: CrossAxisAlignment.center,
+                                              children: [
+                                                const Icon(Icons.payment_rounded,
+                                                    color: Colors.white, size: 18),
+                                                const SizedBox(width: 6),
+                                                Flexible(
+                                                  child: Column(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(l10n.payNow,
+                                                        style: const TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 13,
+                                                          fontWeight: FontWeight.w700,
+                                                          letterSpacing: 0.1,
+                                                          height: 1.1,
+                                                        )),
+                                                      Text(l10n.payNowHint,
+                                                        style: TextStyle(
+                                                          color: Colors.white.withValues(alpha: 0.88),
+                                                          fontSize: 9,
+                                                          fontWeight: FontWeight.w500,
+                                                          height: 1.1,
+                                                        ),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
                                                       ),
-                                                      maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
-                                                    ),
-                                                  ],
+                                                    ],
+                                                  ),
                                                 ),
-                                              ),
-                                            ],
+                                              ],
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -1176,39 +1184,48 @@ class _CartSheet extends ConsumerWidget {
                                 child: OutlinedButton(
                                   onPressed: () => _saveAndNext(context, ref),
                                   style: OutlinedButton.styleFrom(
+                                    padding: EdgeInsets.zero,
                                     side: BorderSide(color: AppColors.warning.withValues(alpha: 0.55), width: 1.5),
                                     foregroundColor: AppColors.warning,
                                     backgroundColor: AppColors.warning.withValues(alpha: 0.06),
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                                   ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(Icons.pause_circle_outline_rounded, size: 18),
-                                      const SizedBox(width: 8),
-                                      Flexible(
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(l10n.saveAndNext,
-                                              style: const TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w700,
-                                              )),
-                                            Text(l10n.saveAndNextHint,
-                                              style: TextStyle(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w500,
-                                                color: AppColors.warning.withValues(alpha: 0.85),
+                                  child: SizedBox(
+                                    height: 52,
+                                    width: double.infinity,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      children: [
+                                        const Icon(Icons.pause_circle_outline_rounded, size: 18),
+                                        const SizedBox(width: 8),
+                                        Flexible(
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(l10n.saveAndNext,
+                                                style: const TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w700,
+                                                  height: 1.1,
+                                                )),
+                                              Text(l10n.saveAndNextHint,
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: AppColors.warning.withValues(alpha: 0.85),
+                                                  height: 1.1,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
                                               ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),

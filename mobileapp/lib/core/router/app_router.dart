@@ -29,18 +29,29 @@ import '../../screens/bi/bi_analytics_screen.dart';
 final _rootNavigatorKey  = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
-final appRouterProvider = Provider<GoRouter>((ref) {
-  final isInitialising = ref.watch(authProvider.select((s) => s.isInitialising));
-  final isAuthenticated = ref.watch(authProvider.select((s) => s.isAuthenticated));
-  final access = ref.watch(roleAccessProvider);
+/// Re-runs [GoRouter.redirect] without recreating the router (avoids GlobalKey clashes).
+class _RouterRefresh extends ChangeNotifier {
+  void ping() => notifyListeners();
+}
 
-  return GoRouter(
+final appRouterProvider = Provider<GoRouter>((ref) {
+  final refresh = _RouterRefresh();
+  ref.onDispose(refresh.dispose);
+  ref.listen(authProvider, (_, __) => refresh.ping());
+  ref.listen(roleAccessProvider, (_, __) => refresh.ping());
+
+  final router = GoRouter(
     navigatorKey: _rootNavigatorKey,
+    refreshListenable: refresh,
     initialLocation: '/dashboard',
     debugLogDiagnostics: false,
 
     // ── Redirect logic ─────────────────────────────────────────────────────
     redirect: (context, state) {
+      final isInitialising = ref.read(authProvider.select((s) => s.isInitialising));
+      final isAuthenticated = ref.read(authProvider.select((s) => s.isAuthenticated));
+      final access = ref.read(roleAccessProvider);
+
       if (isInitialising) return '/splash';
 
       final loc     = state.matchedLocation;
@@ -94,6 +105,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+
+  ref.onDispose(router.dispose);
+  return router;
 });
 
 // ── Minimal animated splash shown during session restore ──────────────────────

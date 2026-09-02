@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../data/models/branch_model.dart';
 import '../../providers/branches_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../widgets/gradient_app_bar.dart';
 import '../../widgets/shimmer_loader.dart';
@@ -16,24 +17,29 @@ class BranchesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = ref.watch(appLocalizationsProvider);
     final branchesAsync = ref.watch(branchesProvider);
+    final user = ref.watch(currentUserProvider);
+    final canCreateBranch = user?.isTenantWide ?? false;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: GradientAppBar(
         title: l10n.branchManagement,
-        subtitle: l10n.multiLocationOverview,
+        subtitle: user != null && !user.isTenantWide && user.branchName != null
+            ? '${l10n.multiLocationOverview} · ${user.branchName}'
+            : l10n.multiLocationOverview,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add_rounded, color: Colors.white),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(l10n.addBranchesWeb),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-          ),
+          if (canCreateBranch)
+            IconButton(
+              icon: const Icon(Icons.add_rounded, color: Colors.white),
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(l10n.addBranchesWeb),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+            ),
         ],
       ),
       body: branchesAsync.when(

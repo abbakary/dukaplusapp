@@ -51,7 +51,7 @@ import { ComplianceTrustPanel } from '@/components/v1/ComplianceTrustPanel';
 import { DocumentTemplatesView } from '@/components/v1/DocumentTemplatesView';
 import { canManageStaffRBAC } from '@/lib/rbac';
 import { useSaasPlans } from '@/context/SaasPlansContext';
-import { derivePaymentStatus, formatPlanPrice, paymentStatusLabel, paymentStatusTone, planPeriod } from '@/lib/saasPlans';
+import { derivePaymentStatus, formatPlanPrice, paymentStatusLabel, paymentStatusTone, planBranchLabel, planPeriod } from '@/lib/saasPlans';
 import type { SaaSPlanTier } from '@/types/v1';
 import confetti from 'canvas-confetti';
 
@@ -89,7 +89,7 @@ export const AccountSettingsView: React.FC<AccountSettingsViewProps> = ({
   setStaffList: externalSetStaffList,
   onSwitchToStaffSite,
   onNavigate,
-  currentPlanTier = 'biashara_pro',
+  currentPlanTier = 'starter',
   subscriptionExpiry = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
 }) => {
   const isSw = language === 'sw';
@@ -918,7 +918,10 @@ export const AccountSettingsView: React.FC<AccountSettingsViewProps> = ({
             <div className="p-4 rounded-xl bg-[#F9F9F7] border border-[#003322]/10">
               <div className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37]">{isSw ? 'Mpango' : 'Plan'}</div>
               <div className="text-lg font-bold text-[#003322] mt-1">{isSw ? activePlan.nameSw : activePlan.name}</div>
-              <div className="text-sm text-[#605E5C]">{formatPlanPrice(activePlan, isSw)}{!activePlan.contactUs && planPeriod(isSw)}</div>
+              <span className="inline-block mt-1 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-100">
+                {planBranchLabel(activePlan, isSw)}
+              </span>
+              <div className="text-sm text-[#605E5C] mt-1">{formatPlanPrice(activePlan, isSw)}{!activePlan.contactUs && planPeriod(isSw)}</div>
             </div>
             <div className="p-4 rounded-xl bg-[#F9F9F7] border border-[#003322]/10">
               <div className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37]">{isSw ? 'Inaisha' : 'Renews / expires'}</div>
@@ -936,6 +939,37 @@ export const AccountSettingsView: React.FC<AccountSettingsViewProps> = ({
               <li key={f} className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> {f}</li>
             ))}
           </ul>
+          <div className="border-t border-[#EDEBE9] pt-5 space-y-3">
+            <div>
+              <h4 className="text-sm font-bold text-[#323130]">{isSw ? 'Mipango yote' : 'All plans'}</h4>
+              <p className="text-xs text-[#605E5C] mt-0.5">
+                {isSw
+                  ? 'Hakuna mpango wa bure — boresha kupitia M-Pesa au kwenye Usimamizi wa Matawi.'
+                  : 'No free tier — upgrade via M-Pesa or Branch Management.'}
+              </p>
+            </div>
+            <div className="grid sm:grid-cols-3 gap-3">
+              {plans.map(plan => {
+                const isCurrent = plan.tier === currentPlanTier;
+                return (
+                  <div
+                    key={plan.id}
+                    className={`p-3 rounded-xl border text-xs ${isCurrent ? 'border-[#6264A7] bg-[#6264A7]/5 ring-1 ring-[#6264A7]/20' : 'border-[#E1DFDD] bg-white'}`}
+                  >
+                    <div className="font-bold text-[#323130]">{isSw ? plan.nameSw : plan.name}</div>
+                    <span className="inline-block mt-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-teal-50 text-teal-800">
+                      {planBranchLabel(plan, isSw)}
+                    </span>
+                    <div className="font-extrabold text-[#107C10] mt-2">{formatPlanPrice(plan, isSw)}</div>
+                    {!plan.contactUs && <div className="text-[10px] text-[#605E5C]">{planPeriod(isSw)}</div>}
+                    {isCurrent && (
+                      <div className="mt-2 text-[10px] font-bold text-emerald-700">{isSw ? '✓ Mpango wako' : '✓ Current plan'}</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 
