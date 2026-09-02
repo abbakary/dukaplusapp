@@ -4,7 +4,7 @@
  */
 
 import type { CartItem, Customer, PaymentBreakdown, PaymentMethod, Product, SaleTransaction } from '@/types/v1';
-import { calculateSaleTotals, computeDiscountedSubtotal } from '@/lib/taxComplianceSettings';
+import { calculateSaleTotals, computeDiscountedSubtotal, effectiveUnitPrice } from '@/lib/taxComplianceSettings';
 import type { TaxComplianceSettings } from '@/lib/taxComplianceSettings';
 
 export type TransactionLifecycleStatus =
@@ -189,7 +189,7 @@ export function buildSaleFromCart(params: BuildSaleParams): SaleTransaction {
   const clientId = params.clientTransactionId ?? generateClientTransactionId();
   const { subtotal, discountAmount } = computeDiscountedSubtotal(
     cart.map(i => ({
-      unitPrice: i.product.price,
+      unitPrice: effectiveUnitPrice(i.product.price, i.unitPriceOverride),
       quantity: i.quantity,
       discountPercent: i.discountPercent,
     })),
@@ -230,14 +230,17 @@ export function buildSaleFromCart(params: BuildSaleParams): SaleTransaction {
     customerId: customer?.id,
     customerName: customer?.name || (isSw ? 'Mteja wa Taslimu (Walk-in)' : 'Walk-in Customer'),
     items: cart.map(i => {
-      const lineGross = i.product.price * i.quantity;
+      const unit = effectiveUnitPrice(i.product.price, i.unitPriceOverride);
+      const lineGross = unit * i.quantity;
       const pct = taxSettings.discountEnabled ? i.discountPercent : 0;
       const lineTotal = Math.round(lineGross * (1 - pct / 100));
       return {
         productId: i.product.id,
         productName: i.product.name,
         quantity: i.quantity,
-        unitPrice: i.product.price,
+        unitPrice: unit,
+        originalUnitPrice: i.product.price,
+        discountPercent: pct,
         total: lineTotal,
       };
     }),

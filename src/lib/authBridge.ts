@@ -21,6 +21,8 @@ interface ApiUser {
   status?: string;
 }
 
+const USER_KEY = 'duka_user';
+
 export function mapApiUserToAuthUser(apiUser: ApiUser): AuthUser {
   return {
     id: apiUser.id,
@@ -43,14 +45,79 @@ export function mapApiUserToAuthUser(apiUser: ApiUser): AuthUser {
   };
 }
 
-export async function tryRestoreSession(): Promise<AuthUser | null> {
-  api.loadTokens();
-  if (!localStorage.getItem('duka_access')) return null;
+export function persistAuthUser(user: AuthUser): void {
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
+
+export function loadCachedAuthUser(): AuthUser | null {
   try {
-    const user = await api.getMe();
-    return mapApiUserToAuthUser(user as unknown as ApiUser);
+    const raw = localStorage.getItem(USER_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as AuthUser;
   } catch {
-    api.clearTokens();
     return null;
   }
+}
+
+export function isNetworkFailure(error: unknown): boolean {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) return true;
+  const msg = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  return (
+    msg.includes('failed to fetch') ||
+    msg.includes('network') ||
+    msg.includes('load failed') ||
+    msg.includes('connection') ||
+    msg.includes('timeout')
+  );
+}
+
+export function isAuthFailure(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error);
+  return msg.includes('401') || msg.toLowerCase().includes('unauthorized') || msg.toLowerCase().includes('invalid');
+}
+
+export interface SessionRestoreResult {
+  user: AuthUser | null;
+  offline: boolean;
+  fromCache: boolean;
+}
+
+export async function tryRestoreSession(): Promise<SessionRestoreResult> {
+  api.loadTokens();
+  if (!api.hasValidSession()) {
+    api.clearTokens();
+    return { user: null, offline: false, fromCache: false };
+  }
+
+  const cached = loadCachedAuthUser();
+
+  if (!navigator.onLine) {
+    if (cached) return { user: cached, offline: true, fromCache: true };
+    return { user: null, offline: true, fromCache: false };
+  }
+
+  try {
+    const user = await api.getMe();
+    const mapped = mapApiUserToAuthUser(user as unknown as ApiUser);
+    persistAuthUser(mapped);
+    return { user: mapped, offline: false, fromCache: false };
+  } catch (error) {
+    if (isAuthFailure(error)) {
+      api.clearTokens();
+      return { user: null, offline: false, fromCache: false };
+    }
+    if (cached) {
+      return { user: cached, offline: true, fromCache: true };
+    }
+    return { user: null, offline: !navigator.onLine, fromCache: false };
+  }
+}
+
+export async function loginAndLoadUser(email: string, password: string): Promise<AuthUser> {
+  const tokens = await api.login(email.trim(), password);
+  api.setTokens(tokens.access_token, tokens.refresh_token, tokens.expires_in_days);
+  const me = await api.getMe();
+  const user = mapApiUserToAuthUser(me as unknown as ApiUser);
+  persistAuthUser(user);
+  return user;
 }

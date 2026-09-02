@@ -24,10 +24,8 @@ export const useAuthStore = create<AuthState>()(
       login: async (email, password) => {
         set({ isLoading: true });
         try {
-          const tokens = await api.login(email, password);
-          api.setTokens(tokens.access_token, tokens.refresh_token);
-          const user = await api.getMe();
-          localStorage.setItem('duka_user', JSON.stringify(user));
+          const { loginAndLoadUser } = await import('@/lib/authBridge');
+          const user = await loginAndLoadUser(email, password);
           set({ user, isAuthenticated: true, isLoading: false });
         } catch (e) {
           set({ isLoading: false });
@@ -40,16 +38,13 @@ export const useAuthStore = create<AuthState>()(
         set({ user: null, isAuthenticated: false });
       },
       loadUser: async () => {
-        api.loadTokens();
-        if (!localStorage.getItem('duka_access')) return;
-        set({ isLoading: true });
-        try {
-          const user = await api.getMe();
-          set({ user, isAuthenticated: true, isLoading: false });
-        } catch {
-          api.clearTokens();
+        const { tryRestoreSession } = await import('@/lib/authBridge');
+        const result = await tryRestoreSession();
+        if (!result.user) {
           set({ user: null, isAuthenticated: false, isLoading: false });
+          return;
         }
+        set({ user: result.user, isAuthenticated: true, isLoading: false });
       },
       setLanguage: (lang) => set({ language: lang }),
     }),
@@ -104,7 +99,7 @@ interface OfflineState {
 }
 
 export const useOfflineStore = create<OfflineState>((set) => ({
-  isOnline: navigator.onLine,
+  isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
   pendingCount: 0,
   setOnline: (v) => set({ isOnline: v }),
   setPendingCount: (v) => set({ pendingCount: v }),

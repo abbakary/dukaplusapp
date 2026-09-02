@@ -21,6 +21,9 @@ class CartNotifier extends StateNotifier<CartState> {
   void updateDiscount(String productId, double pct) =>
       state = state.updateDiscount(productId, pct);
 
+  void updateUnitPriceOverride(String productId, double? price) =>
+      state = state.updateUnitPriceOverride(productId, price);
+
   void setCustomer(String id, String name) =>
       state = state.setCustomer(id, name);
 
@@ -62,9 +65,9 @@ final cartTotalsProvider = Provider<CartTotals>((ref) {
   var gross = 0.0;
   var net = 0.0;
   for (final item in cart.items) {
-    gross += item.originalTotal;
+    gross += item.product.price * item.quantity;
     final pct = settings.capDiscount(item.discountPercent);
-    net += item.originalTotal * (1 - pct / 100);
+    net += item.effectiveUnitPrice * item.quantity * (1 - pct / 100);
   }
   return computeCartTotals(
     grossSubtotal: gross,

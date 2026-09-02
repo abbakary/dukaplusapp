@@ -26,7 +26,7 @@ import {
   Send,
   Info
 } from 'lucide-react';
-import { CartItem, Customer, Language, PaymentMethod, Product, SaleTransaction, BusinessType } from '@/types/v1';
+import { CartItem, Customer, Language, PaymentMethod, Product, SaleTransaction, BusinessType, AuthUser } from '@/types/v1';
 import { formatTSh, getTranslation } from '@/utils/translations';
 import { getWorkplace } from '@/lib/businessProfiles';
 import { productMatchesSearch } from '@/lib/productMetaDisplay';
@@ -40,7 +40,9 @@ import {
   generateTraSignature,
   computeDiscountedSubtotal,
   capDiscountPercent,
+  effectiveUnitPrice,
 } from '@/lib/taxComplianceSettings';
+import { resolvePosPricingAccess } from '@/lib/rbac';
 import { api } from '@/lib/api';
 import { mapCustomer, customerToApiPayload } from '@/lib/apiSync';
 import {
@@ -75,6 +77,7 @@ interface POSViewProps {
   resumeSaleId?: string;
   onResumeConsumed?: () => void;
   tableContextLabel?: string;
+  currentUser?: AuthUser | null;
 }
 
 export const POSView: React.FC<POSViewProps> = ({
@@ -100,11 +103,16 @@ export const POSView: React.FC<POSViewProps> = ({
   resumeSaleId,
   onResumeConsumed,
   tableContextLabel,
+  currentUser,
 }) => {
   const isSw = language === 'sw';
   const t = (key: any) => getTranslation(language, key);
   const workplace = getWorkplace(businessType, isSw ? 'sw' : 'en');
   const { settings: taxSettings } = useTaxCompliance();
+  const pricing = useMemo(
+    () => resolvePosPricingAccess(currentUser, taxSettings),
+    [currentUser, taxSettings],
+  );
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -156,6 +164,12 @@ export const POSView: React.FC<POSViewProps> = ({
   React.useEffect(() => {
     resumeSaleIdRef.current = resumeSaleId ?? null;
   }, [resumeSaleId]);
+
+  React.useEffect(() => {
+    if (!pricing.canUsePartialPayment && paymentMode !== 'full') {
+      setPaymentMode('full');
+    }
+  }, [pricing.canUsePartialPayment, paymentMode]);
   
   // Payment Options
   const [paymentMode, setPaymentMode] = useState<'full' | 'partial' | 'credit'>('full');
@@ -359,9 +373,14 @@ export const POSView: React.FC<POSViewProps> = ({
 
   const handleUpdateDiscount = (productId: string, raw: string) => {
     const parsed = parseFloat(raw);
-    const pct = taxSettings.discountEnabled
-      ? capDiscountPercent(isNaN(parsed) ? 0 : parsed, taxSettings)
-      : 0;
+    let pct = isNaN(parsed) ? 0 : parsed;
+    if (!pricing.canApplyDiscount) {
+      pct = 0;
+    } else if (pct > taxSettings.maxDiscountPercent && !pricing.canApproveHighDiscount) {
+      pct = taxSettings.maxDiscountPercent;
+    } else {
+      pct = Math.min(Math.max(pct, 0), 100);
+    }
     setCart(prev =>
       prev.map(item =>
         item.product.id === productId ? { ...item, discountPercent: pct } : item,
@@ -369,12 +388,26 @@ export const POSView: React.FC<POSViewProps> = ({
     );
   };
 
+  const handleUpdateUnitPrice = (productId: string, raw: string) => {
+    if (!pricing.canOverridePrice) return;
+    const parsed = parseFloat(raw.replace(/,/g, ''));
+    setCart(prev =>
+      prev.map(item => {
+        if (item.product.id !== productId) return item;
+        if (!raw.trim() || isNaN(parsed) || parsed <= 0) {
+          return { ...item, unitPriceOverride: undefined };
+        }
+        return { ...item, unitPriceOverride: parsed };
+      }),
+    );
+  };
+
   // Financial Calculations (per-line discounts when enabled)
   const { subtotal, discountAmount, grossSubtotal } = computeDiscountedSubtotal(
     cart.map(item => ({
-      unitPrice: item.product.price,
+      unitPrice: effectiveUnitPrice(item.product.price, item.unitPriceOverride),
       quantity: item.quantity,
-      discountPercent: item.discountPercent,
+      discountPercent: pricing.canApplyDiscount ? item.discountPercent : 0,
     })),
     taxSettings,
   );
@@ -925,19 +958,36 @@ export const POSView: React.FC<POSViewProps> = ({
                           </button>
                         </div>
                       </div>
-                      {taxSettings.discountEnabled && (
+                      {pricing.canApplyDiscount && (
                         <div className="flex items-center justify-between mt-2 pt-2 border-t border-[#EDEBE9]/80">
                           <span className="text-[10px] font-semibold text-[#605E5C]">
                             {isSw ? 'Punguzo (%)' : 'Discount (%)'}
+                            {!pricing.canApproveHighDiscount && (
+                              <span className="text-[9px] text-[#605E5C]"> · max {taxSettings.maxDiscountPercent}%</span>
+                            )}
                           </span>
                           <input
                             type="number"
                             min={0}
-                            max={taxSettings.maxDiscountPercent}
+                            max={pricing.canApproveHighDiscount ? 100 : taxSettings.maxDiscountPercent}
                             value={item.discountPercent || ''}
                             placeholder="0"
                             onChange={e => handleUpdateDiscount(item.product.id, e.target.value)}
                             className="w-14 text-center text-[10px] font-bold bg-white border border-[#EDEBE9] rounded py-0.5 outline-none focus:border-[#6264A7]"
+                          />
+                        </div>
+                      )}
+                      {pricing.canOverridePrice && (
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-[#EDEBE9]/80">
+                          <span className="text-[10px] font-semibold text-[#605E5C]">
+                            {isSw ? 'Bei (kubadilisha)' : 'Unit price'}
+                          </span>
+                          <input
+                            type="number"
+                            min={1}
+                            value={item.unitPriceOverride ?? item.product.price}
+                            onChange={e => handleUpdateUnitPrice(item.product.id, e.target.value)}
+                            className="w-20 text-center text-[10px] font-bold bg-white border border-[#EDEBE9] rounded py-0.5 outline-none focus:border-[#6264A7]"
                           />
                         </div>
                       )}
@@ -981,6 +1031,7 @@ export const POSView: React.FC<POSViewProps> = ({
             </div>
 
             {/* Payment Mode Selector: Full / Partial / Credit */}
+            {pricing.canUsePartialPayment && (
             <div>
               <label className="block text-[11px] font-bold text-[#323130] mb-1">{t('paymentType')}</label>
               <div className="grid grid-cols-3 gap-1.5 text-xs">
@@ -1004,6 +1055,7 @@ export const POSView: React.FC<POSViewProps> = ({
                 ))}
               </div>
             </div>
+            )}
 
             {/* Payment Method Selector */}
             {paymentMode !== 'credit' && (

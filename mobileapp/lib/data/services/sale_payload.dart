@@ -16,8 +16,10 @@ Map<String, dynamic> saleToApiPayload({
               'product_id': i.product.id,
               'product_name': i.product.name,
               'quantity': i.quantity,
-              'unit_price': i.product.price,
+              'unit_price': i.effectiveUnitPrice,
               'total': i.lineTotal,
+              'discount_percent': i.discountPercent,
+              'original_unit_price': i.product.price,
             })
         .toList(),
     'customer_id': cart.customerId,

@@ -182,32 +182,32 @@ const DEFAULT_STAFF_PERMISSIONS: Record<StaffRole, StaffPermissions> = {
   Owner: {
     canSellPOS: true, canGiveCredit: true, canModifyInventory: true,
     canViewProfitReports: true, canManageSuppliers: true, canApproveDiscounts: true,
-    canVoidReceipts: true, canPerformDailyClosing: true, canAccessSuperAdmin: false,
+    canOverridePrices: true, canVoidReceipts: true, canPerformDailyClosing: true, canAccessSuperAdmin: false,
   },
   Manager: {
     canSellPOS: true, canGiveCredit: true, canModifyInventory: true,
     canViewProfitReports: true, canManageSuppliers: true, canApproveDiscounts: true,
-    canVoidReceipts: true, canPerformDailyClosing: true, canAccessSuperAdmin: false,
+    canOverridePrices: true, canVoidReceipts: true, canPerformDailyClosing: true, canAccessSuperAdmin: false,
   },
   Pharmacist: {
     canSellPOS: true, canGiveCredit: true, canModifyInventory: true,
     canViewProfitReports: false, canManageSuppliers: true, canApproveDiscounts: true,
-    canVoidReceipts: true, canPerformDailyClosing: false, canAccessSuperAdmin: false,
+    canOverridePrices: true, canVoidReceipts: true, canPerformDailyClosing: false, canAccessSuperAdmin: false,
   },
   Cashier: {
     canSellPOS: true, canGiveCredit: false, canModifyInventory: false,
     canViewProfitReports: false, canManageSuppliers: false, canApproveDiscounts: false,
-    canVoidReceipts: false, canPerformDailyClosing: true, canAccessSuperAdmin: false,
+    canOverridePrices: false, canVoidReceipts: false, canPerformDailyClosing: true, canAccessSuperAdmin: false,
   },
   Storekeeper: {
     canSellPOS: false, canGiveCredit: false, canModifyInventory: true,
     canViewProfitReports: false, canManageSuppliers: true, canApproveDiscounts: false,
-    canVoidReceipts: false, canPerformDailyClosing: false, canAccessSuperAdmin: false,
+    canOverridePrices: false, canVoidReceipts: false, canPerformDailyClosing: false, canAccessSuperAdmin: false,
   },
   Accountant: {
     canSellPOS: false, canGiveCredit: true, canModifyInventory: true,
     canViewProfitReports: true, canManageSuppliers: true, canApproveDiscounts: false,
-    canVoidReceipts: false, canPerformDailyClosing: true, canAccessSuperAdmin: false,
+    canOverridePrices: false, canVoidReceipts: false, canPerformDailyClosing: true, canAccessSuperAdmin: false,
   },
 };
 
@@ -575,6 +575,8 @@ export function saleToApiPayload(sale: SaleTransaction, options?: { finalize?: b
       quantity: i.quantity,
       unit_price: i.unitPrice,
       total: i.total,
+      discount_percent: i.discountPercent ?? 0,
+      original_unit_price: i.originalUnitPrice ?? i.unitPrice,
     })),
     customer_id: sale.customerId || null,
     customer_name: sale.customerName,

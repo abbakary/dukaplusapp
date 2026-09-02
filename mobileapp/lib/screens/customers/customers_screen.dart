@@ -5,6 +5,9 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../data/models/customer_model.dart';
 import '../../providers/customers_provider.dart';
+import '../../core/utils/offline_messages.dart';
+import '../../data/services/offline_sync_service.dart';
+import '../../providers/connectivity_provider.dart';
 import '../../providers/api_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../widgets/gradient_app_bar.dart';
@@ -436,27 +439,52 @@ class _AddCustomerSheetState extends ConsumerState<_AddCustomerSheet> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
+    final l10n = ref.read(appLocalizationsProvider);
+    final payload = {
+      'name': _nameCtrl.text.trim(),
+      'phone': _phoneCtrl.text.trim(),
+      'email': _emailCtrl.text.trim(),
+    };
+    final tempId = 'local-cust-${DateTime.now().millisecondsSinceEpoch}';
     try {
       final api = ref.read(apiClientProvider);
-      await api.createCustomer({
-        'name': _nameCtrl.text.trim(),
-        'phone': _phoneCtrl.text.trim(),
-        'email': _emailCtrl.text.trim(),
+      final isOnline = ref.read(isOnlineProvider);
+      if (isOnline) {
+        try {
+          await api.createCustomer(payload);
+          ref.read(isOnlineProvider.notifier).setOnline(true);
+          ref.read(customersRefreshProvider.notifier).state++;
+          if (mounted) {
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(l10n.customerAdded), behavior: SnackBarBehavior.floating),
+            );
+          }
+          return;
+        } on Exception {
+          ref.read(isOnlineProvider.notifier).setOnline(false);
+        }
+      }
+      final sync = OfflineSyncService(ref.read(apiClientProvider));
+      await sync.enqueue({
+        'entity_type': 'customer',
+        'entity_id': tempId,
+        'action': 'create',
+        'payload': payload,
+        'client_timestamp': DateTime.now().toIso8601String(),
       });
-      ref.read(customersRefreshProvider.notifier).state++;
+      ref.read(syncRefreshProvider.notifier).state++;
       if (mounted) {
-        final l10n = ref.read(appLocalizationsProvider);
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.customerAdded),
+            content: Text(OfflineMessages.mutationQueued(l10n.isSw, 'customer')),
             behavior: SnackBarBehavior.floating,
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        final l10n = ref.read(appLocalizationsProvider);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.errorMessage(e.toString())), backgroundColor: AppColors.danger),
         );

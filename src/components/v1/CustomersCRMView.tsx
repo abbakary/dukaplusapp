@@ -27,6 +27,9 @@ import { exportCustomerLedger } from '@/utils/reportGenerator';
 import confetti from 'canvas-confetti';
 import { api } from '@/lib/api';
 import { mapCustomer, customerToApiPayload } from '@/lib/apiSync';
+import { runWithOfflineQueue } from '@/lib/offlineMutations';
+import { useOfflineStore } from '@/stores';
+import type { SyncQueueItem } from '@/lib/transactionEngine';
 
 interface CustomersCRMViewProps {
   language: Language;
@@ -35,6 +38,9 @@ interface CustomersCRMViewProps {
   onCustomersChanged?: () => void | Promise<void>;
   onOpenAIChatWithPrompt?: (prompt: string) => void;
   currentUser?: AuthUser | null;
+  tenantId?: string;
+  enqueueSyncItem?: (item: SyncQueueItem) => void;
+  onQueueMutation?: (entityType: string) => void;
 }
 
 export const CustomersCRMView: React.FC<CustomersCRMViewProps> = ({
@@ -44,9 +50,15 @@ export const CustomersCRMView: React.FC<CustomersCRMViewProps> = ({
   onCustomersChanged,
   onOpenAIChatWithPrompt,
   currentUser,
+  tenantId,
+  enqueueSyncItem,
+  onQueueMutation,
 }) => {
   const t = (key: any) => getTranslation(language, key);
   const isSw = language === 'sw';
+  const isOnline = useOfflineStore(s => s.isOnline);
+  const storageId = tenantId || currentUser?.businessId || currentUser?.id || 'local';
+  const enqueue = enqueueSyncItem ?? (() => {});
 
   const handleExportCustomers = () => {
     const totalReceivables = customers.reduce((s, c) => s + (c.outstandingBalance || c.creditLimit - c.creditLimit + (c as any).balance || 0), 0);
@@ -117,20 +129,55 @@ export const CustomersCRMView: React.FC<CustomersCRMViewProps> = ({
     e.preventDefault();
     if (!newCustomer.name || !newCustomer.phone) return;
 
+    const payload = customerToApiPayload({
+      name: newCustomer.name,
+      phone: newCustomer.phone,
+      email: newCustomer.email,
+      address: newCustomer.address,
+      creditLimit: Number(newCustomer.creditLimit),
+    });
+    const tempId = `local-cust-${Date.now()}`;
+
     try {
-      const raw = await api.createCustomer(customerToApiPayload({
-        name: newCustomer.name,
-        phone: newCustomer.phone,
-        email: newCustomer.email,
-        address: newCustomer.address,
-        creditLimit: Number(newCustomer.creditLimit),
-      }));
-      const created = mapCustomer(raw as Record<string, unknown>);
-      setCustomers(prev => [created, ...prev]);
-      setSelectedCustomerId(created.id);
+      const outcome = await runWithOfflineQueue({
+        isOnline,
+        tenantId: storageId,
+        entity_type: 'customer',
+        entity_id: tempId,
+        action: 'create',
+        payload,
+        enqueue,
+        executeOnline: async () => {
+          const raw = await api.createCustomer(payload);
+          const created = mapCustomer(raw as Record<string, unknown>);
+          setCustomers(prev => [created, ...prev]);
+          setSelectedCustomerId(created.id);
+          await onCustomersChanged?.();
+        },
+        onQueued: () => onQueueMutation?.('customer'),
+      });
+
+      if (outcome === 'queued') {
+        const localCustomer: Customer = {
+          id: tempId,
+          name: newCustomer.name,
+          phone: newCustomer.phone,
+          email: newCustomer.email,
+          address: newCustomer.address,
+          creditLimit: Number(newCustomer.creditLimit),
+          balance: 0,
+          totalPurchases: 0,
+          loyaltyPoints: 0,
+          riskScore: 'Low',
+          daysOverdue: 0,
+          dunningStage: 'cleared',
+        };
+        setCustomers(prev => [localCustomer, ...prev]);
+        setSelectedCustomerId(tempId);
+      }
+
       setIsAddingNew(false);
       setNewCustomer({ name: '', phone: '', email: '', address: 'Dar es Salaam, Tanzania', creditLimit: 300000, notes: '' });
-      await onCustomersChanged?.();
       confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
     } catch (err) {
       alert((err as Error).message);
@@ -150,10 +197,26 @@ export const CustomersCRMView: React.FC<CustomersCRMViewProps> = ({
   // Action: Adjust Credit Limit
   const handleAdjustCredit = async (cust: Customer, delta: number) => {
     const newLimit = Math.max(50000, cust.creditLimit + delta);
+    const payload = { credit_limit: newLimit };
     try {
-      const raw = await api.updateCustomer(cust.id, { credit_limit: newLimit });
-      const updated = mapCustomer(raw as Record<string, unknown>);
-      setCustomers(prev => prev.map(c => c.id === cust.id ? updated : c));
+      const outcome = await runWithOfflineQueue({
+        isOnline,
+        tenantId: storageId,
+        entity_type: 'customer',
+        entity_id: cust.id,
+        action: 'update',
+        payload,
+        enqueue,
+        executeOnline: async () => {
+          const raw = await api.updateCustomer(cust.id, payload);
+          const updated = mapCustomer(raw as Record<string, unknown>);
+          setCustomers(prev => prev.map(c => c.id === cust.id ? updated : c));
+        },
+        onQueued: () => onQueueMutation?.('customer'),
+      });
+      if (outcome === 'queued') {
+        setCustomers(prev => prev.map(c => c.id === cust.id ? { ...c, creditLimit: newLimit } : c));
+      }
     } catch (err) {
       alert((err as Error).message);
     }

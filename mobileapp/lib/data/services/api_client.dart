@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/constants/app_constants.dart';
 
 class ApiClient {
@@ -319,17 +320,37 @@ class ApiClient {
   }
 
   // ── Token helpers ─────────────────────────────────────────────────
-  static Future<void> saveTokens(String access, String refresh) async {
-    await _storage.write(key: AppConstants.kAccessToken,  value: access);
+  static Future<void> saveTokens(
+    String access,
+    String refresh, {
+    int expiresInDays = 3,
+  }) async {
+    await _storage.write(key: AppConstants.kAccessToken, value: access);
     await _storage.write(key: AppConstants.kRefreshToken, value: refresh);
+    final prefs = await SharedPreferences.getInstance();
+    final expiresAt = DateTime.now()
+        .add(Duration(days: expiresInDays))
+        .millisecondsSinceEpoch;
+    await prefs.setInt(AppConstants.kTokenExpires, expiresAt);
   }
 
   static Future<String?> readAccessToken() =>
       _storage.read(key: AppConstants.kAccessToken);
 
+  static Future<bool> hasValidSession() async {
+    final token = await readAccessToken();
+    if (token == null || token.isEmpty) return false;
+    final prefs = await SharedPreferences.getInstance();
+    final exp = prefs.getInt(AppConstants.kTokenExpires);
+    if (exp != null && DateTime.now().millisecondsSinceEpoch > exp) return false;
+    return true;
+  }
+
   static Future<void> clearTokens() async {
     await _storage.delete(key: AppConstants.kAccessToken);
     await _storage.delete(key: AppConstants.kRefreshToken);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(AppConstants.kTokenExpires);
   }
 }
 
@@ -360,7 +381,10 @@ class _AuthInterceptor extends Interceptor {
               options: Options(headers: {'Authorization': null}));
           final data = res.data as Map<String, dynamic>;
           await ApiClient.saveTokens(
-            data['access_token'].toString(), data['refresh_token'].toString());
+            data['access_token'].toString(),
+            data['refresh_token'].toString(),
+            expiresInDays: (data['expires_in_days'] as num?)?.toInt() ?? 3,
+          );
           err.requestOptions.headers['Authorization'] =
               'Bearer ${data['access_token']}';
           final retried = await _dio.fetch(err.requestOptions);

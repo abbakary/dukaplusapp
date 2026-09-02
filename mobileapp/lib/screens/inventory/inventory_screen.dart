@@ -7,7 +7,10 @@ import '../../core/utils/formatters.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/products_provider.dart';
+import '../../core/utils/offline_messages.dart';
+import '../../data/services/offline_sync_service.dart';
 import '../../providers/api_provider.dart';
+import '../../providers/connectivity_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../data/models/product_model.dart';
 import '../../widgets/gradient_app_bar.dart';
@@ -720,12 +723,40 @@ class _AddProductSheetState extends ConsumerState<_AddProductSheet> {
       if (_expiryDate != null) {
         payload['expiry_date'] = _expiryDate!.toIso8601String();
       }
-      await api.createProduct(payload);
-      ref.read(productsRefreshProvider.notifier).state++;
+      final tempId = 'local-prod-${DateTime.now().millisecondsSinceEpoch}';
+      final isOnline = ref.read(isOnlineProvider);
+      if (isOnline) {
+        try {
+          await api.createProduct(payload);
+          ref.read(isOnlineProvider.notifier).setOnline(true);
+          ref.read(productsRefreshProvider.notifier).state++;
+          if (mounted) {
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(l10n.productAdded), behavior: SnackBarBehavior.floating),
+            );
+          }
+          return;
+        } on Exception {
+          ref.read(isOnlineProvider.notifier).setOnline(false);
+        }
+      }
+      final sync = OfflineSyncService(ref.read(apiClientProvider));
+      await sync.enqueue({
+        'entity_type': 'product',
+        'entity_id': tempId,
+        'action': 'create',
+        'payload': payload,
+        'client_timestamp': DateTime.now().toIso8601String(),
+      });
+      ref.read(syncRefreshProvider.notifier).state++;
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.productAdded), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text(OfflineMessages.mutationQueued(l10n.isSw, 'product')),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } catch (e) {

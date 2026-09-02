@@ -4,8 +4,10 @@ import '../data/models/cart_model.dart';
 import '../data/models/user_model.dart';
 import '../core/constants/app_constants.dart';
 import '../data/services/sale_payload.dart';
+import '../core/utils/offline_messages.dart';
 import '../data/services/offline_sync_service.dart';
 import 'api_provider.dart';
+import 'connectivity_provider.dart';
 
 final salesRefreshProvider = StateProvider<int>((ref) => 0);
 
@@ -83,7 +85,9 @@ class CompleteSaleNotifier extends StateNotifier<AsyncValue<SaleTransaction?>> {
         final api = _ref.read(apiClientProvider);
         final raw = await api.createSale(payload);
         sale = SaleTransaction.fromJson(raw);
+        _ref.read(isOnlineProvider.notifier).setOnline(true);
       } catch (_) {
+        _ref.read(isOnlineProvider.notifier).setOnline(false);
         sale = _buildLocalSale(params, clientId, vatAmount, paid);
         final sync = OfflineSyncService(_ref.read(apiClientProvider));
         await sync.enqueue({
@@ -93,6 +97,7 @@ class CompleteSaleNotifier extends StateNotifier<AsyncValue<SaleTransaction?>> {
           'payload': payload,
           'client_timestamp': DateTime.now().toIso8601String(),
         });
+        _ref.read(syncRefreshProvider.notifier).state++;
       }
 
       _ref.read(salesListProvider.notifier).prepend(sale);
@@ -122,7 +127,7 @@ class CompleteSaleNotifier extends StateNotifier<AsyncValue<SaleTransaction?>> {
                   productId: i.product.id,
                   productName: i.product.name,
                   quantity: i.quantity,
-                  unitPrice: i.product.price,
+                  unitPrice: i.effectiveUnitPrice,
                   total: i.lineTotal,
                 ))
             .toList(),

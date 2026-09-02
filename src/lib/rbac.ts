@@ -193,3 +193,41 @@ export function canToggleDashboardView(user: AuthUser | null | undefined): boole
   const { isOwner, isManager } = roleFlags(user);
   return isOwner || isManager;
 }
+
+export interface PosPricingAccess {
+  canApplyDiscount: boolean;
+  canApproveHighDiscount: boolean;
+  maxDiscountPercent: number;
+  canOverridePrice: boolean;
+  canUsePartialPayment: boolean;
+  canNegotiate: boolean;
+}
+
+/** Tenant toggles + staff permissions for POS discounts, overrides, and negotiation. */
+export function resolvePosPricingAccess(
+  user: AuthUser | null | undefined,
+  settings: {
+    discountEnabled?: boolean;
+    maxDiscountPercent?: number;
+    priceOverrideEnabled?: boolean;
+    partialPaymentEnabled?: boolean;
+    negotiationEnabled?: boolean;
+  },
+): PosPricingAccess {
+  const perms = resolveUserPermissions(user);
+  const maxDiscountPercent = settings.maxDiscountPercent ?? 15;
+  return {
+    canApplyDiscount: Boolean(settings.discountEnabled) && perms.canSellPOS,
+    canApproveHighDiscount: perms.canApproveDiscounts,
+    maxDiscountPercent,
+    canOverridePrice:
+      Boolean(settings.priceOverrideEnabled) &&
+      (perms.canOverridePrices || perms.canApproveDiscounts),
+    canUsePartialPayment:
+      Boolean(settings.partialPaymentEnabled) && perms.canGiveCredit,
+    canNegotiate:
+      Boolean(settings.negotiationEnabled) &&
+      Boolean(settings.partialPaymentEnabled) &&
+      perms.canGiveCredit,
+  };
+}

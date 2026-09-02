@@ -2,21 +2,33 @@ import { fetchAllPages, unwrapPage } from './pagination';
 import { getApiBaseUrl } from './apiConfig';
 
 const API_BASE = getApiBaseUrl();
+const DEFAULT_TOKEN_DAYS = 3;
+const TOKEN_EXPIRES_KEY = 'duka_token_expires';
 
 class ApiClient {
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
 
-  setTokens(access: string, refresh: string) {
+  setTokens(access: string, refresh: string, expiresInDays = DEFAULT_TOKEN_DAYS) {
     this.accessToken = access;
     this.refreshToken = refresh;
     localStorage.setItem('duka_access', access);
     localStorage.setItem('duka_refresh', refresh);
+    const expiresAt = Date.now() + expiresInDays * 24 * 60 * 60 * 1000;
+    localStorage.setItem(TOKEN_EXPIRES_KEY, String(expiresAt));
   }
 
   loadTokens() {
     this.accessToken = localStorage.getItem('duka_access');
     this.refreshToken = localStorage.getItem('duka_refresh');
+  }
+
+  hasValidSession(): boolean {
+    this.loadTokens();
+    if (!this.accessToken) return false;
+    const raw = localStorage.getItem(TOKEN_EXPIRES_KEY);
+    if (raw && Date.now() > Number(raw)) return false;
+    return true;
   }
 
   clearTokens() {
@@ -25,6 +37,7 @@ class ApiClient {
     localStorage.removeItem('duka_access');
     localStorage.removeItem('duka_refresh');
     localStorage.removeItem('duka_user');
+    localStorage.removeItem(TOKEN_EXPIRES_KEY);
   }
 
   private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -62,7 +75,7 @@ class ApiClient {
       });
       if (!res.ok) return false;
       const data = await res.json();
-      this.setTokens(data.access_token, data.refresh_token);
+      this.setTokens(data.access_token, data.refresh_token, data.expires_in_days ?? DEFAULT_TOKEN_DAYS);
       return true;
     } catch {
       return false;
@@ -71,7 +84,7 @@ class ApiClient {
 
   // Auth
   login(email: string, password: string) {
-    return this.request<{ access_token: string; refresh_token: string }>('/auth/login', {
+    return this.request<{ access_token: string; refresh_token: string; expires_in_days?: number }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password, device_info: navigator.userAgent }),
     });

@@ -124,6 +124,8 @@ export interface CartItem {
   product: Product;
   quantity: number;
   discountPercent: number;
+  /** Manual unit price when price override is enabled */
+  unitPriceOverride?: number;
 }
 
 export type PaymentMethod = 'cash' | 'mpesa' | 'airtel' | 'tigopesa' | 'card' | 'credit';
@@ -147,6 +149,8 @@ export interface SaleTransaction {
     unitPrice: number;
     total: number;
     totalPrice?: number;
+    discountPercent?: number;
+    originalUnitPrice?: number;
   }[];
   subtotal: number;
   discountAmount?: number;
@@ -342,6 +346,7 @@ export interface StaffPermissions {
   canViewProfitReports: boolean;
   canManageSuppliers: boolean;
   canApproveDiscounts: boolean;
+  canOverridePrices: boolean;
   canVoidReceipts: boolean;
   canPerformDailyClosing: boolean;
   canAccessSuperAdmin: boolean;

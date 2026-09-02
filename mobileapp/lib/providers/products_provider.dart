@@ -1,15 +1,33 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/product_model.dart';
+import '../data/services/tenant_cache_service.dart';
 import 'api_provider.dart';
+import 'auth_provider.dart';
+import 'connectivity_provider.dart';
 
-/// Cached product catalog — survives tab switches; invalidate on explicit refresh.
+final _tenantCache = TenantCacheService();
+
+/// Cached product catalog — survives offline; file cache for large shops.
 final productsProvider = FutureProvider.autoDispose<List<Product>>((ref) async {
   ref.keepAlive();
   ref.watch(productsRefreshProvider);
+  final user = ref.watch(currentUserProvider);
+  final tenantId = user?.businessId ?? user?.id ?? 'default';
   final api = ref.read(apiClientProvider);
-  final raw = await api.getProducts(params: const {'limit': 500});
-  return raw.map((e) => Product.fromJson(e as Map<String, dynamic>)).toList();
+  try {
+    final raw = await api.getAllProducts();
+    final products =
+        raw.map((e) => Product.fromJson(e as Map<String, dynamic>)).toList();
+    await _tenantCache.saveProducts(tenantId, products);
+    ref.read(isOnlineProvider.notifier).setOnline(true);
+    return products;
+  } catch (_) {
+    ref.read(isOnlineProvider.notifier).setOnline(false);
+    final cached = await _tenantCache.loadProducts(tenantId);
+    if (cached != null && cached.isNotEmpty) return cached;
+    rethrow;
+  }
 });
 
 final productsRefreshProvider = StateProvider<int>((ref) => 0);

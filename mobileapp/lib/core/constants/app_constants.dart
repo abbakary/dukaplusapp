@@ -13,6 +13,7 @@ class AppConstants {
   static const String kBusinessType  = 'duka_biz_type';
   static const String kLanguage      = 'duka_lang';
   static const String kOfflineQueue  = 'duka_offline_queue';
+  static const String kTokenExpires  = 'duka_token_expires';
 
   // Locale
   static const String defaultLocale  = 'sw';

@@ -31,6 +31,7 @@ class AiChatSheet extends ConsumerStatefulWidget {
 class _AiChatSheetState extends ConsumerState<AiChatSheet> {
   final _inputCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
+  final _inputFocus = FocusNode();
   final _messages = <AiChatMessage>[];
   bool _loading = false;
   bool _seeded = false;
@@ -40,12 +41,16 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet> {
   void dispose() {
     _inputCtrl.dispose();
     _scrollCtrl.dispose();
+    _inputFocus.dispose();
     super.dispose();
   }
 
   @override
   void initState() {
     super.initState();
+    _inputFocus.addListener(() {
+      if (_inputFocus.hasFocus) _scrollToBottom();
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
   }
 
@@ -154,24 +159,31 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet> {
     });
 
     final l10n = ref.watch(appLocalizationsProvider);
-    final bottom = MediaQuery.of(context).padding.bottom;
-    final width = MediaQuery.sizeOf(context).width;
+    final media = MediaQuery.of(context);
+    final bottomSafe = media.padding.bottom;
+    final keyboardHeight = media.viewInsets.bottom;
+    final width = media.size.width;
     final panelWidth = width > 500 ? 440.0 : width;
 
     return Material(
       color: Colors.black54,
       child: GestureDetector(
-        onTap: () => ref.read(aiChatProvider.notifier).close(),
+        onTap: () {
+          FocusScope.of(context).unfocus();
+          ref.read(aiChatProvider.notifier).close();
+        },
         child: Stack(
           children: [
             Positioned(
               right: 0,
               top: 0,
-              bottom: 0,
+              bottom: keyboardHeight,
               width: panelWidth,
               child: GestureDetector(
                 onTap: () {},
-                child: Container(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOutCubic,
                   decoration: const BoxDecoration(
                     color: Colors.white,
                     boxShadow: [
@@ -185,6 +197,7 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet> {
                   child: Column(
                     children: [
                       _Header(l10n: l10n, onClose: () {
+                        FocusScope.of(context).unfocus();
                         ref.read(aiChatProvider.notifier).close();
                       }),
                       Expanded(
@@ -193,6 +206,8 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet> {
                           child: ListView.builder(
                             controller: _scrollCtrl,
                             padding: const EdgeInsets.all(16),
+                            keyboardDismissBehavior:
+                                ScrollViewKeyboardDismissBehavior.onDrag,
                             itemCount: _messages.length + (_loading ? 1 : 0),
                             itemBuilder: (context, i) {
                               if (i == _messages.length && _loading) {
@@ -204,12 +219,14 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet> {
                           ),
                         ),
                       ),
-                      _QuickChips(l10n: l10n, onTap: _send),
+                      if (keyboardHeight == 0)
+                        _QuickChips(l10n: l10n, onTap: _send),
                       _Composer(
                         l10n: l10n,
                         controller: _inputCtrl,
+                        focusNode: _inputFocus,
                         loading: _loading,
-                        bottom: bottom,
+                        bottom: bottomSafe,
                         onSend: () => _send(),
                       ),
                     ],
@@ -480,6 +497,7 @@ class _QuickChips extends StatelessWidget {
 class _Composer extends StatelessWidget {
   final AppLocalizations l10n;
   final TextEditingController controller;
+  final FocusNode focusNode;
   final bool loading;
   final double bottom;
   final VoidCallback onSend;
@@ -487,6 +505,7 @@ class _Composer extends StatelessWidget {
   const _Composer({
     required this.l10n,
     required this.controller,
+    required this.focusNode,
     required this.loading,
     required this.bottom,
     required this.onSend,
@@ -498,11 +517,15 @@ class _Composer extends StatelessWidget {
       color: Colors.white,
       padding: EdgeInsets.fromLTRB(12, 10, 12, 10 + bottom),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Expanded(
             child: TextField(
               controller: controller,
+              focusNode: focusNode,
               enabled: !loading,
+              minLines: 1,
+              maxLines: 4,
               textInputAction: TextInputAction.send,
               onSubmitted: (_) => onSend(),
               decoration: InputDecoration(
@@ -510,14 +533,14 @@ class _Composer extends StatelessWidget {
                 filled: true,
                 fillColor: const Color(0xFFF3F2F1),
                 contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: BorderSide.none,
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Color(0xFF0078D4)),
+                  borderSide: const BorderSide(color: Color(0xFF0078D4), width: 1.5),
                 ),
               ),
             ),

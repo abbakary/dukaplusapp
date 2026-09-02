@@ -1,14 +1,32 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/customer_model.dart';
+import '../data/services/tenant_cache_service.dart';
 import 'api_provider.dart';
+import 'auth_provider.dart';
+import 'connectivity_provider.dart';
+
+final _tenantCache = TenantCacheService();
 
 final customersRefreshProvider = StateProvider<int>((ref) => 0);
 
 final customersProvider = FutureProvider.autoDispose<List<Customer>>((ref) async {
   ref.watch(customersRefreshProvider);
+  final user = ref.watch(currentUserProvider);
+  final tenantId = user?.businessId ?? user?.id ?? 'default';
   final api = ref.read(apiClientProvider);
-  final raw = await api.getCustomers();
-  return raw.map((e) => Customer.fromJson(e as Map<String, dynamic>)).toList();
+  try {
+    final raw = await api.getCustomers();
+    final customers =
+        raw.map((e) => Customer.fromJson(e as Map<String, dynamic>)).toList();
+    await _tenantCache.saveCustomers(tenantId, customers);
+    ref.read(isOnlineProvider.notifier).setOnline(true);
+    return customers;
+  } catch (_) {
+    ref.read(isOnlineProvider.notifier).setOnline(false);
+    final cached = await _tenantCache.loadCustomers(tenantId);
+    if (cached != null && cached.isNotEmpty) return cached;
+    rethrow;
+  }
 });
 
 class CustomerSearchNotifier extends StateNotifier<String> {

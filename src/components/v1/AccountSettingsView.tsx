@@ -156,6 +156,7 @@ export const AccountSettingsView: React.FC<AccountSettingsViewProps> = ({
       canViewProfitReports: false,
       canManageSuppliers: false,
       canApproveDiscounts: false,
+      canOverridePrices: false,
       canVoidReceipts: false,
       canPerformDailyClosing: true,
       canAccessSuperAdmin: false,
@@ -171,6 +172,7 @@ export const AccountSettingsView: React.FC<AccountSettingsViewProps> = ({
       canViewProfitReports: false,
       canManageSuppliers: false,
       canApproveDiscounts: false,
+      canOverridePrices: false,
       canVoidReceipts: false,
       canPerformDailyClosing: false,
       canAccessSuperAdmin: false,
@@ -179,7 +181,7 @@ export const AccountSettingsView: React.FC<AccountSettingsViewProps> = ({
     if (role === 'Cashier') {
       perms = { ...perms, canSellPOS: true, canPerformDailyClosing: true };
     } else if (role === 'Pharmacist') {
-      perms = { ...perms, canSellPOS: true, canGiveCredit: true, canModifyInventory: true, canManageSuppliers: true, canApproveDiscounts: true, canVoidReceipts: true };
+      perms = { ...perms, canSellPOS: true, canGiveCredit: true, canModifyInventory: true, canManageSuppliers: true, canApproveDiscounts: true, canOverridePrices: true, canVoidReceipts: true };
     } else if (role === 'Storekeeper') {
       perms = { ...perms, canModifyInventory: true, canManageSuppliers: true };
     } else if (role === 'Accountant') {
@@ -192,6 +194,7 @@ export const AccountSettingsView: React.FC<AccountSettingsViewProps> = ({
         canViewProfitReports: true,
         canManageSuppliers: true,
         canApproveDiscounts: true,
+        canOverridePrices: true,
         canVoidReceipts: true,
         canPerformDailyClosing: true,
         canAccessSuperAdmin: false,
@@ -1076,6 +1079,7 @@ export const AccountSettingsView: React.FC<AccountSettingsViewProps> = ({
                     { key: 'canViewProfitReports', label: 'View Financial P&L' },
                     { key: 'canManageSuppliers', label: 'Order from Suppliers' },
                     { key: 'canApproveDiscounts', label: 'Authorize Discounts' },
+                    { key: 'canOverridePrices', label: 'Override Unit Prices' },
                     { key: 'canVoidReceipts', label: 'Void TRA Receipts' },
                     { key: 'canPerformDailyClosing', label: 'Daily Shift Closing' },
                   ].map(({ key, label }) => (
@@ -1232,6 +1236,7 @@ export const AccountSettingsView: React.FC<AccountSettingsViewProps> = ({
                   { key: 'canViewProfitReports', label: 'View Profit & Margins', desc: 'Can view gross profit, net revenue, and supplier buy costs' },
                   { key: 'canManageSuppliers', label: 'Order from Suppliers', desc: 'Can create POs and record vendor invoice settlements' },
                   { key: 'canApproveDiscounts', label: 'Authorize Price Discounts', desc: 'Can apply custom discount overrides' },
+                  { key: 'canOverridePrices', label: 'Override Unit Prices', desc: 'Can manually change item prices at POS' },
                   { key: 'canVoidReceipts', label: 'Void Issued Receipts', desc: 'Can cancel or refund issued TRA transactions' },
                   { key: 'canPerformDailyClosing', label: 'Shift Drawer Closing', desc: 'Can perform end-of-day Z-report reconciliations' },
                 ].map(({ key, label, desc }) => (

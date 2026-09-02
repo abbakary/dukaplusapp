@@ -9,6 +9,7 @@ class StaffPermissions {
   final bool canViewProfitReports;
   final bool canManageSuppliers;
   final bool canApproveDiscounts;
+  final bool canOverridePrices;
   final bool canVoidReceipts;
   final bool canPerformDailyClosing;
   final bool canAccessSuperAdmin;
@@ -20,6 +21,7 @@ class StaffPermissions {
     this.canViewProfitReports = false,
     this.canManageSuppliers = false,
     this.canApproveDiscounts = false,
+    this.canOverridePrices = false,
     this.canVoidReceipts = false,
     this.canPerformDailyClosing = false,
     this.canAccessSuperAdmin = false,
@@ -34,6 +36,7 @@ class StaffPermissions {
       canViewProfitReports: j['canViewProfitReports'] == true || j['can_view_profit_reports'] == true,
       canManageSuppliers: j['canManageSuppliers'] == true || j['can_manage_suppliers'] == true,
       canApproveDiscounts: j['canApproveDiscounts'] == true || j['can_approve_discounts'] == true,
+      canOverridePrices: j['canOverridePrices'] == true || j['can_override_prices'] == true,
       canVoidReceipts: j['canVoidReceipts'] == true || j['can_void_receipts'] == true,
       canPerformDailyClosing: j['canPerformDailyClosing'] == true || j['can_perform_daily_closing'] == true,
       canAccessSuperAdmin: j['canAccessSuperAdmin'] == true || j['can_access_super_admin'] == true,
@@ -53,6 +56,7 @@ StaffPermissions defaultPermissionsForRole(StaffRole role) {
         canViewProfitReports: true,
         canManageSuppliers: true,
         canApproveDiscounts: true,
+        canOverridePrices: true,
         canVoidReceipts: true,
         canPerformDailyClosing: true,
       );
@@ -63,6 +67,7 @@ StaffPermissions defaultPermissionsForRole(StaffRole role) {
         canModifyInventory: true,
         canManageSuppliers: true,
         canApproveDiscounts: true,
+        canOverridePrices: true,
         canVoidReceipts: true,
       );
     case StaffRole.cashier:
@@ -97,6 +102,8 @@ StaffPermissions resolvePermissions(AuthUser user) {
       canViewProfitReports: true,
       canModifyInventory: true,
       canManageSuppliers: true,
+      canOverridePrices: true,
+      canApproveDiscounts: true,
     );
   }
   final role = user.staffRole ?? StaffRole.cashier;
@@ -113,6 +120,7 @@ bool _permissionsEmpty(StaffPermissions p) =>
     !p.canViewProfitReports &&
     !p.canManageSuppliers &&
     !p.canApproveDiscounts &&
+    !p.canOverridePrices &&
     !p.canVoidReceipts &&
     !p.canPerformDailyClosing &&
     !p.canAccessSuperAdmin;

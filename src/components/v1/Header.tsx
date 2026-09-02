@@ -30,7 +30,6 @@ interface HeaderProps {
   language: Language;
   setLanguage: (lang: Language) => void;
   isOnline?: boolean;
-  setIsOnline?: (online: boolean) => void;
   pendingSyncCount?: number;
   onSync?: () => void;
   onOpenAIChat: () => void;
@@ -57,7 +56,6 @@ export const Header: React.FC<HeaderProps> = ({
   language = 'sw',
   setLanguage,
   isOnline = true,
-  setIsOnline,
   pendingSyncCount = 0,
   onSync = () => {},
   onOpenAIChat,
@@ -220,19 +218,19 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {/* Offline / Online Network State */}
-          <button
-            id="network-toggle-btn"
-            onClick={() => setIsOnline && setIsOnline(!isOnline)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-2xs shrink-0 ${
+          <div
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all shadow-2xs shrink-0 ${
               isOnline
-                ? 'bg-[#107C10]/10 text-[#107C10] border-[#107C10]/30 hover:bg-[#107C10]/20'
-                : 'bg-[#D13438]/10 text-[#D13438] border-[#D13438]/30 hover:bg-[#D13438]/20'
+                ? 'bg-[#107C10]/10 text-[#107C10] border-[#107C10]/30'
+                : 'bg-[#D13438]/10 text-[#D13438] border-[#D13438]/30'
             }`}
-            title="Click to toggle Online/Offline simulation"
+            title={isOnline
+              ? (isSw ? 'Uko mtandaoni' : 'Connected')
+              : (isSw ? 'Huna mtandao — data zimehifadhiwa kwenye kifaa' : 'Offline — using saved data on this device')}
           >
             {isOnline ? <Wifi className="w-3.5 h-3.5" /> : <WifiOff className="w-3.5 h-3.5" />}
-            <span className="hidden sm:inline">{isOnline ? 'Online' : 'Offline'}</span>
-          </button>
+            <span className="hidden sm:inline">{isOnline ? (isSw ? 'Mtandaoni' : 'Online') : (isSw ? 'Nje ya mtandao' : 'Offline')}</span>
+          </div>
 
           {/* Pending Sync Trigger */}
           {pendingSyncCount > 0 && !isSuperAdmin && (

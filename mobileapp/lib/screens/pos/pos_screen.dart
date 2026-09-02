@@ -19,6 +19,7 @@ import '../../providers/pos_resume_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/api_provider.dart';
+import '../../providers/permissions_provider.dart';
 import '../../widgets/qr_scanner_sheet.dart';
 import '../../widgets/shimmer_loader.dart';
 import '../../widgets/search_bar_widget.dart';
@@ -862,28 +863,30 @@ class _CartSheet extends ConsumerWidget {
                               color: Colors.white, size: 20),
                         ),
                         const SizedBox(width: 10),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(l10n.orderSummary,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: -0.3,
-                              )),
-                            Text(
-                              l10n.itemCount(cart.itemCount),
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.80),
-                                fontSize: 11,
-                              )),
-                          ],
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(l10n.orderSummary,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.3,
+                                )),
+                              Text(
+                                l10n.itemCount(cart.itemCount),
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.80),
+                                  fontSize: 11,
+                                )),
+                            ],
+                          ),
                         ),
-                        const Spacer(),
+                        const SizedBox(width: 8),
                         // Total amount badge
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.20),
                             borderRadius: BorderRadius.circular(20),
@@ -893,28 +896,27 @@ class _CartSheet extends ConsumerWidget {
                             AppFormatters.tsh(totals.total),
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 15,
+                              fontSize: 13,
                               fontWeight: FontWeight.w800,
                               letterSpacing: -0.3,
                             )),
                         ),
                         if (!cart.isEmpty) ...[
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                           GestureDetector(
                             onTap: () => ref.read(cartProvider.notifier).clear(),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              width: 30, height: 30,
                               decoration: BoxDecoration(
                                 color: AppColors.danger.withValues(alpha: 0.22),
-                                borderRadius: BorderRadius.circular(20),
+                                shape: BoxShape.circle,
                                 border: Border.all(color: AppColors.danger.withValues(alpha: 0.4)),
                               ),
-                              child: Text(l10n.clearAll,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                )),
+                              child: const Icon(
+                                Icons.delete_outline_rounded,
+                                color: Colors.white,
+                                size: 16,
+                              ),
                             ),
                           ),
                         ],
@@ -1150,8 +1152,14 @@ class _CartItemRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(cartProvider.notifier);
     final settings = ref.watch(businessSettingsProvider);
+    final pricing = ref.watch(posPricingAccessProvider);
     final primary  = Theme.of(context).colorScheme.primary;
     final l10n     = ref.watch(appLocalizationsProvider);
+    final isSw     = l10n.isSw;
+    final maxDisc = pricing.canApproveHighDiscount
+        ? 100
+        : settings.maxDiscountPercent.round();
+    final discountOptions = <int>{0, 5, 10, maxDisc}.toList()..sort();
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -1194,12 +1202,22 @@ class _CartItemRow extends ConsumerWidget {
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis),
-                    Text(AppFormatters.tsh(item.product.price),
+                    Text(AppFormatters.tsh(item.effectiveUnitPrice),
                       style: TextStyle(
                         fontSize: 11,
                         color: primary,
                         fontWeight: FontWeight.w500,
                       )),
+                    if (item.unitPriceOverride != null &&
+                        item.unitPriceOverride != item.product.price)
+                      Text(
+                        'Was ${AppFormatters.tsh(item.product.price)}',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: AppColors.textSecondary,
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -1244,7 +1262,7 @@ class _CartItemRow extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    AppFormatters.tsh(settings.discountEnabled
+                    AppFormatters.tsh(pricing.canApplyDiscount
                         ? item.lineTotal
                         : item.originalTotal),
                     style: TextStyle(
@@ -1257,7 +1275,7 @@ class _CartItemRow extends ConsumerWidget {
             ],
           ),
           // Discount chips
-          if (settings.discountEnabled) ...[
+          if (pricing.canApplyDiscount) ...[
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -1278,8 +1296,7 @@ class _CartItemRow extends ConsumerWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        for (final pct in ([0, 5, 10, settings.maxDiscountPercent.round()]
-                              ..sort()))
+                        for (final pct in discountOptions)
                           GestureDetector(
                             onTap: () => notifier.updateDiscount(
                               item.product.id,
@@ -1315,6 +1332,39 @@ class _CartItemRow extends ConsumerWidget {
                   ),
                 ],
               ),
+            ),
+          ],
+          if (pricing.canOverridePrice) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      isDense: true,
+                      labelText: isSw ? 'Bei' : 'Unit price',
+                      hintText: AppFormatters.tsh(item.product.price),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    ),
+                    onSubmitted: (v) {
+                      final parsed = double.tryParse(v.replaceAll(',', ''));
+                      if (parsed == null || parsed <= 0) {
+                        notifier.updateUnitPriceOverride(item.product.id, null);
+                        return;
+                      }
+                      notifier.updateUnitPriceOverride(item.product.id, parsed);
+                    },
+                  ),
+                ),
+                if (item.unitPriceOverride != null)
+                  IconButton(
+                    tooltip: l10n.reset,
+                    icon: const Icon(Icons.undo_rounded, size: 18),
+                    onPressed: () =>
+                        notifier.updateUnitPriceOverride(item.product.id, null),
+                  ),
+              ],
             ),
           ],
         ],
@@ -1383,6 +1433,7 @@ class _PaymentSheet extends ConsumerStatefulWidget {
 
 class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
   String _method   = 'cash';
+  SaleType _saleType = SaleType.full;
   final _amtCtrl   = TextEditingController();
   bool _completing = false;
 
@@ -1396,23 +1447,46 @@ class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
     final cart = ref.read(cartProvider);
     final totals = ref.read(cartTotalsProvider);
     final user = ref.read(currentUserProvider);
+    final pricing = ref.read(posPricingAccessProvider);
     final l10n = ref.read(appLocalizationsProvider);
     if (user == null || cart.isEmpty) return;
 
+    if (_saleType != SaleType.full && !pricing.canUsePartialPayment) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(l10n.errorMessage('Partial/credit sales are disabled')),
+          backgroundColor: AppColors.danger,
+        ));
+      }
+      return;
+    }
+
+    if (_saleType == SaleType.credit && !cart.hasCustomer) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(l10n.errorMessage('Select a customer for credit sales')),
+          backgroundColor: AppColors.danger,
+        ));
+      }
+      return;
+    }
+
     setState(() => _completing = true);
     try {
-      final tendered =
-          double.tryParse(_amtCtrl.text.replaceAll(',', '')) ??
-              totals.total;
+      final tendered = _saleType == SaleType.credit
+          ? 0.0
+          : (double.tryParse(_amtCtrl.text.replaceAll(',', '')) ?? totals.total);
       final resume = ref.read(posResumeProvider);
       SaleTransaction? completedSale;
 
       if (resume.resumeSaleId != null) {
         final api = ref.read(apiClientProvider);
         final raw = await api.finalizeSale(resume.resumeSaleId!, {
-          'payments': [
-            {'method': _method, 'amount': tendered}
-          ],
+          'payments': _saleType == SaleType.credit
+              ? []
+              : [
+                  {'method': _method, 'amount': tendered}
+                ],
           if (cart.customerId != null) 'customer_id': cart.customerId,
           if (cart.customerName != null) 'customer_name': cart.customerName,
         });
@@ -1423,10 +1497,12 @@ class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
         completedSale = await ref.read(completeSaleProvider.notifier).execute(
               CompleteSaleParams(
                 cart: cart,
-                payments: [
-                  {'method': _method, 'amount': tendered}
-                ],
-                type: SaleType.full,
+                payments: _saleType == SaleType.credit
+                    ? []
+                    : [
+                        {'method': _method, 'amount': tendered}
+                      ],
+                type: _saleType,
                 cashier: user,
               ),
             );
@@ -1466,11 +1542,15 @@ class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
   Widget build(BuildContext context) {
     final l10n    = ref.watch(appLocalizationsProvider);
     final totals  = ref.watch(cartTotalsProvider);
+    final cart    = ref.watch(cartProvider);
+    final pricing = ref.watch(posPricingAccessProvider);
     final primary = Theme.of(context).colorScheme.primary;
     final mq      = MediaQuery.of(context);
-    final tendered =
-        double.tryParse(_amtCtrl.text.replaceAll(',', '')) ?? totals.total;
+    final tendered = _saleType == SaleType.credit
+        ? 0.0
+        : (double.tryParse(_amtCtrl.text.replaceAll(',', '')) ?? totals.total);
     final change   = tendered - totals.total;
+    final isSw     = l10n.isSw;
 
     return Container(
       // Fixed height — no overflow
@@ -1505,6 +1585,68 @@ class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
                   ),
                   const SizedBox(height: 14),
 
+                  if (pricing.canUsePartialPayment) ...[
+                    Text(isSw ? 'Aina ya Malipo' : 'Payment Type',
+                        style: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        for (final mode in SaleType.values)
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 6),
+                              child: GestureDetector(
+                                onTap: () => setState(() => _saleType = mode),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 140),
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: _saleType == mode
+                                        ? primary.withAlpha(22)
+                                        : AppColors.surfaceVariant,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: _saleType == mode ? primary : AppColors.border,
+                                      width: _saleType == mode ? 1.8 : 1,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    mode == SaleType.full
+                                        ? (isSw ? 'Taslimu' : 'Full')
+                                        : mode == SaleType.partial
+                                            ? (isSw ? 'Awamu' : 'Partial')
+                                            : (isSw ? 'Mkopo' : 'Credit'),
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: _saleType == mode
+                                          ? primary
+                                          : AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (_saleType == SaleType.credit && !cart.hasCustomer) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        isSw ? 'Chagua mteja kwa mkopo' : 'Select a customer for credit',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.danger,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 14),
+                  ],
+
+                  if (_saleType != SaleType.credit) ...[
                   // ── Payment method grid ─────────────────
                   Text(l10n.paymentMethod,
                       style: const TextStyle(
@@ -1557,7 +1699,9 @@ class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
                   const SizedBox(height: 14),
 
                   // ── Amount ──────────────────────────────
-                  Text(l10n.amountTendered,
+                  Text(_saleType == SaleType.partial
+                          ? (isSw ? 'Malipo ya Awamu' : 'Down Payment')
+                          : l10n.amountTendered,
                       style: const TextStyle(
                           fontSize: 13, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 6),
@@ -1574,8 +1718,22 @@ class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
                     ),
                   ),
 
+                  if (_saleType == SaleType.partial && tendered < totals.total) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      isSw
+                          ? 'Salio ${AppFormatters.tsh(totals.total - tendered)} litaandikwa kama deni.'
+                          : 'Remaining ${AppFormatters.tsh(totals.total - tendered)} posts to customer credit.',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.warning,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+
                   // ── Change ──────────────────────────────
-                  if (_amtCtrl.text.isNotEmpty && change >= 0) ...[
+                  if (_amtCtrl.text.isNotEmpty && change >= 0 && _saleType == SaleType.full) ...[
                     const SizedBox(height: 10),
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -1603,6 +1761,7 @@ class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
                         ],
                       ),
                     ),
+                  ],
                   ],
                   const SizedBox(height: 10),
                 ],

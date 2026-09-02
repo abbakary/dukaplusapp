@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import type { AuthUser, Language } from '@/types/v1';
 import { api } from '@/lib/api';
-import { mapApiUserToAuthUser } from '@/lib/authBridge';
+import { loginAndLoadUser } from '@/lib/authBridge';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 
 interface PublicLoginViewProps {
@@ -32,10 +32,8 @@ export const PublicLoginView: React.FC<PublicLoginViewProps> = ({
     setError('');
     setLoading(true);
     try {
-      const tokens = await api.login(email.trim(), password);
-      api.setTokens(tokens.access_token, tokens.refresh_token);
-      const me = await api.getMe();
-      onLoginSuccess(mapApiUserToAuthUser(me as Parameters<typeof mapApiUserToAuthUser>[0]));
+      const user = await loginAndLoadUser(email, password);
+      onLoginSuccess(user);
     } catch {
       setError(isSw ? 'Imeshindikana kuingia. Hakikisha email na nenosiri ni sahihi.' : 'Sign in failed. Check your email and password.');
     } finally {

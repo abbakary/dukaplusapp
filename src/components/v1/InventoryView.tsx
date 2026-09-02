@@ -46,6 +46,9 @@ import { QRCodeModal } from '@/components/v1/QRCodeModal';
 import confetti from 'canvas-confetti';
 import { api } from '@/lib/api';
 import { fetchProductsFromApi, mapProduct, mapStockMovement, optionalApiDate, productToApiPayload } from '@/lib/apiSync';
+import { runWithOfflineQueue } from '@/lib/offlineMutations';
+import { useOfflineStore } from '@/stores';
+import type { SyncQueueItem } from '@/lib/transactionEngine';
 
 interface InventoryViewProps {
   language: Language;
@@ -64,6 +67,9 @@ interface InventoryViewProps {
   businessType?: BusinessType;
   onProductsChanged?: () => void | Promise<void>;
   currentUser?: import('@/types/v1').AuthUser | null;
+  tenantId?: string;
+  enqueueSyncItem?: (item: SyncQueueItem) => void;
+  onQueueMutation?: (entityType: string) => void;
 }
 
 export const InventoryView: React.FC<InventoryViewProps> = ({
@@ -83,9 +89,15 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
   businessType = 'retail',
   onProductsChanged,
   currentUser,
+  tenantId,
+  enqueueSyncItem,
+  onQueueMutation,
 }) => {
   const t = (key: any) => getTranslation(language, key);
   const isSw = language === 'sw';
+  const isOnline = useOfflineStore(s => s.isOnline);
+  const storageId = tenantId || currentUser?.businessId || currentUser?.id || 'local';
+  const enqueue = enqueueSyncItem ?? (() => {});
   const workplace = getWorkplace(businessType);
   const defaultCategory = workplace.default_categories?.[0] ?? getDefaultMainCategory(businessType, isSw ? 'sw' : 'en');
   const defaultUnit = workplace.default_units?.[0] ?? getDefaultUnit(businessType);
@@ -313,31 +325,68 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
     e.preventDefault();
     if (!newProduct.name) return;
 
+    const payload = {
+      ...productToApiPayload({
+        name: newProduct.name,
+        category: categorySel.displayPath || newProduct.category,
+        sku: newProduct.sku,
+        price: Number(newProduct.price),
+        cost: Number(newProduct.cost),
+        stock: Number(newProduct.stock),
+        reorderPoint: Number(newProduct.reorderPoint),
+        unit: newProduct.unit,
+        batchNumber: dynamicFields.batch_number ?? newProduct.batchNumber,
+        expiryDate: dynamicFields.expiry_date ?? newProduct.expiryDate,
+        requiresPrescription: Boolean(dynamicFields.requires_prescription),
+        businessType,
+      }),
+      metadata_json: dynamicFields.metadata,
+      business_type: businessType,
+    };
+    const tempId = `local-prod-${Date.now()}`;
+
     try {
-      await api.createProduct({
-        ...productToApiPayload({
+      const outcome = await runWithOfflineQueue({
+        isOnline,
+        tenantId: storageId,
+        entity_type: 'product',
+        entity_id: tempId,
+        action: 'create',
+        payload,
+        enqueue,
+        executeOnline: async () => {
+          await api.createProduct(payload);
+          const refreshed = await fetchProductsFromApi();
+          setProducts(refreshed);
+          await onProductsChanged?.();
+        },
+        onQueued: () => onQueueMutation?.('product'),
+      });
+
+      if (outcome === 'queued') {
+        const localProd: Product = {
+          id: tempId,
           name: newProduct.name,
           category: categorySel.displayPath || newProduct.category,
-          sku: newProduct.sku,
+          sku: newProduct.sku || `SKU-${Date.now()}`,
           price: Number(newProduct.price),
           cost: Number(newProduct.cost),
           stock: Number(newProduct.stock),
           reorderPoint: Number(newProduct.reorderPoint),
-          unit: newProduct.unit,
+          unit: newProduct.unit || getDefaultUnit(businessType),
           batchNumber: dynamicFields.batch_number ?? newProduct.batchNumber,
           expiryDate: dynamicFields.expiry_date ?? newProduct.expiryDate,
-          requiresPrescription: Boolean(dynamicFields.requires_prescription),
-          businessType,
-        }),
-        metadata_json: dynamicFields.metadata,
-        business_type: businessType,
-      });
-      const refreshed = await fetchProductsFromApi();
-      setProducts(refreshed);
-      await onProductsChanged?.();
+        };
+        setProducts(prev => [localProd, ...prev]);
+      }
+
       setIsAddingProduct(false);
       confetti({ particleCount: 40, spread: 50, origin: { y: 0.8 } });
-      triggerToast(`Product ${newProduct.name} registered with ${newProduct.stock} units!`);
+      triggerToast(
+        outcome === 'queued'
+          ? (isSw ? 'Bidhaa imehifadhiwa — itasawazishwa ukirudi mtandaoni.' : 'Product saved locally — will sync when online.')
+          : `Product ${newProduct.name} registered with ${newProduct.stock} units!`,
+      );
     } catch (err) {
       alert((err as Error).message);
     }
@@ -352,24 +401,63 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
     const qty = Number(manualStockInForm.quantity);
     const unitCost = Number(manualStockInForm.unitCost);
 
+    const stockPayload = {
+      product_id: prod.id,
+      quantity: qty,
+      movement_type: 'in_adjustment',
+      batch_number: manualStockInForm.batchNumber,
+      expiry_date: optionalApiDate(manualStockInForm.expiryDate),
+      notes: `Manual Stock In: ${manualStockInForm.notes} (${manualStockInForm.supplierName})`,
+    };
+
     try {
-      const movRaw = await api.adjustStock({
-        product_id: prod.id,
-        quantity: qty,
-        movement_type: 'in_adjustment',
-        batch_number: manualStockInForm.batchNumber,
-        expiry_date: optionalApiDate(manualStockInForm.expiryDate),
-        notes: `Manual Stock In: ${manualStockInForm.notes} (${manualStockInForm.supplierName})`,
+      const outcome = await runWithOfflineQueue({
+        isOnline,
+        tenantId: storageId,
+        entity_type: 'stock',
+        entity_id: `stock-in-${prod.id}-${Date.now()}`,
+        action: 'adjust',
+        payload: stockPayload,
+        enqueue,
+        executeOnline: async () => {
+          const movRaw = await api.adjustStock(stockPayload);
+          const updatedRaw = await api.updateProduct(prod.id, {
+            cost: unitCost > 0 ? unitCost : prod.cost,
+            batch_number: manualStockInForm.batchNumber || prod.batchNumber,
+            expiry_date: optionalApiDate(manualStockInForm.expiryDate || prod.expiryDate),
+          });
+          setProducts(prev => prev.map(p => p.id === prod.id ? mapProduct(updatedRaw as Record<string, unknown>) : p));
+          setStockMovements(prev => [mapStockMovement(movRaw as Record<string, unknown>), ...prev]);
+        },
+        onQueued: () => onQueueMutation?.('stock'),
       });
-      const updatedRaw = await api.updateProduct(prod.id, {
-        cost: unitCost > 0 ? unitCost : prod.cost,
-        batch_number: manualStockInForm.batchNumber || prod.batchNumber,
-        expiry_date: optionalApiDate(manualStockInForm.expiryDate || prod.expiryDate),
-      });
-      setProducts(prev => prev.map(p => p.id === prod.id ? mapProduct(updatedRaw as Record<string, unknown>) : p));
-      setStockMovements(prev => [mapStockMovement(movRaw as Record<string, unknown>), ...prev]);
+
+      if (outcome === 'queued') {
+        const newStock = prod.stock + qty;
+        setProducts(prev => prev.map(p => p.id === prod.id ? { ...p, stock: newStock, cost: unitCost > 0 ? unitCost : p.cost } : p));
+        setStockMovements(prev => [{
+          id: `sm-local-${Date.now()}`,
+          date: new Date().toISOString().replace('T', ' ').slice(0, 16),
+          productId: prod.id,
+          productName: prod.name,
+          sku: prod.sku,
+          type: 'in_adjustment',
+          quantity: qty,
+          previousStock: prod.stock,
+          newStock,
+          unitCost: unitCost > 0 ? unitCost : prod.cost,
+          totalValuation: qty * (unitCost > 0 ? unitCost : prod.cost),
+          operatorName: currentUser?.name || 'Staff',
+          notes: manualStockInForm.notes,
+        }, ...prev]);
+      }
+
       setIsQuickStockInOpen(false);
-      triggerToast(`Stocked In +${qty} ${prod.unit} of ${prod.name}!`);
+      triggerToast(
+        outcome === 'queued'
+          ? (isSw ? 'Stoo imehifadhiwa — itasawazishwa mtandaoni.' : 'Stock in saved locally — will sync when online.')
+          : `Stocked In +${qty} ${prod.unit} of ${prod.name}!`,
+      );
     } catch (err) {
       alert((err as Error).message);
     }
@@ -383,19 +471,57 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
 
     const qty = Number(stockOutForm.quantity);
 
+    const stockPayload = {
+      product_id: prod.id,
+      quantity: -qty,
+      movement_type: stockOutForm.reason === 'expired' ? 'out_expired' : 'out_adjustment',
+      notes: stockOutForm.notes,
+    };
+
     try {
-      const movRaw = await api.adjustStock({
-        product_id: prod.id,
-        quantity: -qty,
-        movement_type: stockOutForm.reason === 'expired' ? 'out_expired' : 'out_adjustment',
-        notes: stockOutForm.notes,
+      const outcome = await runWithOfflineQueue({
+        isOnline,
+        tenantId: storageId,
+        entity_type: 'stock',
+        entity_id: `stock-out-${prod.id}-${Date.now()}`,
+        action: 'adjust',
+        payload: stockPayload,
+        enqueue,
+        executeOnline: async () => {
+          const movRaw = await api.adjustStock(stockPayload);
+          const updatedRaw = await api.getProducts();
+          setProducts((updatedRaw as Array<Record<string, unknown>>).map(mapProduct));
+          await onProductsChanged?.();
+          setStockMovements(prev => [mapStockMovement(movRaw as Record<string, unknown>), ...prev]);
+        },
+        onQueued: () => onQueueMutation?.('stock'),
       });
-      const updatedRaw = await api.getProducts();
-      setProducts((updatedRaw as Array<Record<string, unknown>>).map(mapProduct));
-      await onProductsChanged?.();
-      setStockMovements(prev => [mapStockMovement(movRaw as Record<string, unknown>), ...prev]);
+
+      if (outcome === 'queued') {
+        setProducts(prev => prev.map(p => p.id === prod.id ? { ...p, stock: Math.max(0, p.stock - qty) } : p));
+        setStockMovements(prev => [{
+          id: `sm-local-${Date.now()}`,
+          date: new Date().toISOString().replace('T', ' ').slice(0, 16),
+          productId: prod.id,
+          productName: prod.name,
+          sku: prod.sku,
+          type: stockOutForm.reason === 'expired' ? 'out_expired' : 'out_adjustment',
+          quantity: -qty,
+          previousStock: prod.stock,
+          newStock: Math.max(0, prod.stock - qty),
+          unitCost: prod.cost,
+          totalValuation: qty * prod.cost,
+          operatorName: currentUser?.name || 'Staff',
+          notes: stockOutForm.notes,
+        }, ...prev]);
+      }
+
       setIsStockOutOpen(false);
-      triggerToast(`Stock Out -${qty} ${prod.unit} of ${prod.name}`);
+      triggerToast(
+        outcome === 'queued'
+          ? (isSw ? 'Stock out imehifadhiwa — itasawazishwa mtandaoni.' : 'Stock out saved locally — will sync when online.')
+          : `Stock Out -${qty} ${prod.unit} of ${prod.name}`,
+      );
     } catch (err) {
       alert((err as Error).message);
     }

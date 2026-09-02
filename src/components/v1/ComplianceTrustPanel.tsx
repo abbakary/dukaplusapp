@@ -195,6 +195,44 @@ export const ComplianceTrustPanel: React.FC<ComplianceTrustPanelProps> = ({
             />
             {isSw ? 'Onyesha punguzo kwenye ankara & noti' : 'Show discount on invoices & notes'}
           </label>
+          <label className="flex items-center gap-2 text-xs font-semibold text-[#323130]">
+            <input
+              type="checkbox"
+              checked={draft.cartDiscountEnabled}
+              onChange={e => patch({ cartDiscountEnabled: e.target.checked })}
+              disabled={!draft.discountEnabled}
+              className="rounded text-[#0078D4] disabled:opacity-40"
+            />
+            {isSw ? 'Ruhusu punguzo la gari (cart)' : 'Allow cart-level discount'}
+          </label>
+          <label className="flex items-center gap-2 text-xs font-semibold text-[#323130]">
+            <input
+              type="checkbox"
+              checked={draft.priceOverrideEnabled}
+              onChange={e => patch({ priceOverrideEnabled: e.target.checked })}
+              className="rounded text-[#0078D4]"
+            />
+            {isSw ? 'Ruhusu kubadilisha bei (POS)' : 'Allow price overrides at POS'}
+          </label>
+          <label className="flex items-center gap-2 text-xs font-semibold text-[#323130]">
+            <input
+              type="checkbox"
+              checked={draft.partialPaymentEnabled}
+              onChange={e => patch({ partialPaymentEnabled: e.target.checked })}
+              className="rounded text-[#0078D4]"
+            />
+            {isSw ? 'Ruhusu malipo ya awamu / mkopo' : 'Allow partial & credit sales'}
+          </label>
+          <label className="flex items-center gap-2 text-xs font-semibold text-[#323130]">
+            <input
+              type="checkbox"
+              checked={draft.negotiationEnabled}
+              onChange={e => patch({ negotiationEnabled: e.target.checked })}
+              disabled={!draft.discountEnabled && !draft.priceOverrideEnabled}
+              className="rounded text-[#0078D4] disabled:opacity-40"
+            />
+            {isSw ? 'Ruhusu mazungumzo ya bei (discount + override)' : 'Enable price negotiation (discount + override)'}
+          </label>
         </div>
 
         <div className="bg-white rounded-xl border border-[#E1DFDD] p-5 shadow-xs space-y-4">

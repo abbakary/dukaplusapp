@@ -94,8 +94,20 @@ import { AIChatbotDrawer } from '@/components/v1/AIChatbotDrawer';
 import { WorkplaceView } from '@/components/v1/WorkplaceView';
 import confetti from 'canvas-confetti';
 import { api } from '@/lib/api';
-import { mapApiUserToAuthUser, tryRestoreSession } from '@/lib/authBridge';
-import { syncTenantFromApi, syncAdminFromApi, saleToApiPayload, fetchDashboardStats, fetchProductsFromApi, fetchCustomersFromApi, mergeCustomersFromApi, mapSupplier, type DashboardStats } from '@/lib/apiSync';
+import { mapApiUserToAuthUser, tryRestoreSession, persistAuthUser } from '@/lib/authBridge';
+import { syncTenantFromApi, syncAdminFromApi, saleToApiPayload, fetchDashboardStats, fetchProductsFromApi, fetchCustomersFromApi, mergeCustomersFromApi, mapSupplier, type DashboardStats, type ApiSyncResult } from '@/lib/apiSync';
+import { saveTenantCache, loadTenantCache, formatCacheAge } from '@/lib/tenantCache';
+import { flushSyncQueue } from '@/lib/offlineSync';
+import {
+  offlineBannerText,
+  syncSuccessText,
+  syncPartialText,
+  saleQueuedOfflineText,
+  mutationQueuedText,
+  loadingShopText,
+  backOnlineText,
+} from '@/lib/offlineMessages';
+import { useOfflineStore } from '@/stores';
 import { canAccessVendorTab, receivablesInitialTab, expensesInitialTab, canSwitchStaffWorkstation } from '@/lib/rbac';
 import { getDefaultWorkplaceTab, getDefaultMainCategory, getDefaultUnit } from '@/lib/businessProfiles';
 import { RestaurantOrder } from '@/types/restaurant';
@@ -155,7 +167,10 @@ export default function DukaPortal() {
   const [userRole, setUserRole] = useState<UserRole>('vendor_owner');
   const [businessType, setBusinessType] = useState<BusinessType>('retail');
   const [businessName, setBusinessName] = useState<string>('');
-  const [isOnline, setIsOnline] = useState<boolean>(true);
+  const isOnline = useOfflineStore(s => s.isOnline);
+  const [sessionReady, setSessionReady] = useState(false);
+  const [offlineNotice, setOfflineNotice] = useState<string | null>(null);
+  const [cacheSavedAt, setCacheSavedAt] = useState<string | null>(null);
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
   const [isAIChatOpen, setIsAIChatOpen] = useState<boolean>(false);
   const [aiInitialPrompt, setAiInitialPrompt] = useState<string | undefined>(undefined);
@@ -209,6 +224,40 @@ export default function DukaPortal() {
   const [pendingSyncQueue, setPendingSyncQueue] = useState<Array<Record<string, unknown>>>([]);
 
   const tenantStorageId = currentUser?.businessId || currentUser?.id || 'local';
+  const isSw = language === 'sw';
+
+  const applyTenantSnapshot = (data: ApiSyncResult & { dashboardStats?: DashboardStats | null }) => {
+    setBusinessType(data.businessType);
+    setBusinessName(data.businessName);
+    if (data.plan) setCurrentPlanTier(data.plan);
+    if (data.subscriptionExpiry) setSubscriptionExpiry(data.subscriptionExpiry);
+    setProducts(data.products);
+    if (data.customersFetchOk !== false) {
+      setCustomers(prev => mergeCustomersFromApi(prev, data.customers));
+    }
+    setSuppliers(data.suppliers);
+    setBranches(data.branches);
+    setExpenses(data.expenses);
+    setEvents(data.events);
+    setStaffList(data.staff);
+    if (data.staff.length) setActiveStaffMember(data.staff[0]);
+    setPurchaseOrders(data.purchaseOrders);
+    setSales(data.sales);
+    setStockMovements(data.stockMovements);
+    if (data.dashboardStats) setDashboardStats(data.dashboardStats);
+  };
+
+  const persistTenantSnapshot = async (data: ApiSyncResult) => {
+    const stats = await fetchDashboardStats().catch(() => null);
+    if (stats) setDashboardStats(stats);
+    const savedAt = new Date().toISOString();
+    await saveTenantCache(tenantStorageId, {
+      ...data,
+      savedAt,
+      dashboardStats: stats,
+    });
+    setCacheSavedAt(savedAt);
+  };
 
   useEffect(() => {
     if (!tenantStorageId) return;
@@ -222,34 +271,39 @@ export default function DukaPortal() {
   const enqueueSyncItem = (item: Record<string, unknown>) => {
     setPendingSyncQueue(prev => {
       const next = [...prev, item];
-      saveSyncQueue(tenantStorageId, next as any);
+      saveSyncQueue(tenantStorageId, next as import('@/lib/transactionEngine').SyncQueueItem[]);
       return next;
     });
     setPendingSyncCount(prev => prev + 1);
   };
 
-  const applyApiTenantData = async () => {
-    const data = await syncTenantFromApi();
-    if (!data) return;
-    setBusinessType(data.businessType);
-    setBusinessName(data.businessName);
-    if (data.plan) setCurrentPlanTier(data.plan);
-    if (data.subscriptionExpiry) setSubscriptionExpiry(data.subscriptionExpiry);
-    setProducts(data.products);
-    if (data.customersFetchOk) {
-      setCustomers(prev => mergeCustomersFromApi(prev, data.customers));
+  const notifyQueuedMutation = (entityType: string) => {
+    setOfflineNotice(mutationQueuedText(isSw, entityType));
+  };
+
+  const applyApiTenantData = async (): Promise<{ ok: boolean; fromCache: boolean }> => {
+    if (!navigator.onLine) {
+      const cached = await loadTenantCache(tenantStorageId);
+      if (cached) {
+        applyTenantSnapshot(cached);
+        setCacheSavedAt(cached.savedAt);
+        return { ok: true, fromCache: true };
+      }
+      return { ok: false, fromCache: false };
     }
-    setSuppliers(data.suppliers);
-    setBranches(data.branches);
-    setExpenses(data.expenses);
-    setEvents(data.events);
-    setStaffList(data.staff);
-    if (data.staff.length) setActiveStaffMember(data.staff[0]);
-    setPurchaseOrders(data.purchaseOrders);
-    setSales(data.sales);
-    setStockMovements(data.stockMovements);
-    const stats = await fetchDashboardStats();
-    if (stats) setDashboardStats(stats);
+    const data = await syncTenantFromApi();
+    if (!data) {
+      const cached = await loadTenantCache(tenantStorageId);
+      if (cached) {
+        applyTenantSnapshot(cached);
+        setCacheSavedAt(cached.savedAt);
+        return { ok: true, fromCache: true };
+      }
+      return { ok: false, fromCache: false };
+    }
+    applyTenantSnapshot(data);
+    await persistTenantSnapshot(data);
+    return { ok: true, fromCache: false };
   };
 
   const refreshCustomersFromApi = async () => {
@@ -335,20 +389,45 @@ export default function DukaPortal() {
     setDashboardStats(null);
     setPendingSyncQueue([]);
     setPendingSyncCount(0);
+    setOfflineNotice(null);
+    setCacheSavedAt(null);
   };
 
   useEffect(() => {
-    tryRestoreSession().then(async (user) => {
-      if (user) {
-        setCurrentUser(user);
-        setUserRole(user.role);
-        if (user.businessType) setBusinessType(user.businessType);
-        if (user.businessName) setBusinessName(user.businessName);
-        setActiveTab(user.role === 'super_admin' ? 'super-dashboard' : 'dashboard');
-        if (user.role !== 'super_admin') await applyApiTenantData();
-        else await applyAdminData();
+    (async () => {
+      const result = await tryRestoreSession();
+      if (result.user) {
+        setCurrentUser(result.user);
+        setUserRole(result.user.role);
+        if (result.user.businessType) setBusinessType(result.user.businessType);
+        if (result.user.businessName) setBusinessName(result.user.businessName);
+        setActiveTab(result.user.role === 'super_admin' ? 'super-dashboard' : 'dashboard');
+
+        const tid = result.user.businessId || result.user.id || 'local';
+        const cached = await loadTenantCache(tid);
+        if (cached) {
+          applyTenantSnapshot(cached);
+          setCacheSavedAt(cached.savedAt);
+        }
+        const savedQueue = loadSyncQueue(tid);
+        if (savedQueue.length) {
+          setPendingSyncQueue(savedQueue);
+          setPendingSyncCount(savedQueue.length);
+        }
+
+        if (result.user.role !== 'super_admin') {
+          const sync = await applyApiTenantData();
+          if (result.offline || sync.fromCache || !navigator.onLine) {
+            setOfflineNotice(offlineBannerText(language === 'sw', savedQueue.length));
+          } else {
+            setOfflineNotice(null);
+          }
+        } else {
+          await applyAdminData();
+        }
       }
-    });
+      setSessionReady(true);
+    })();
   }, []);
 
   useEffect(() => {
@@ -417,6 +496,7 @@ export default function DukaPortal() {
 
   // Switch / Login User Handler
   const handleLoginUser = async (user: AuthUser, options?: { fromRegistration?: boolean }) => {
+    persistAuthUser(user);
     setCurrentUser(user);
     setUserRole(user.role);
     if (user.businessType) setBusinessType(user.businessType);
@@ -607,7 +687,7 @@ export default function DukaPortal() {
       if (newMovements.length) setStockMovements(prev => [...newMovements, ...prev]);
     };
 
-    if (isOnline && userRole !== 'super_admin') {
+    if (isOnline && navigator.onLine && userRole !== 'super_admin') {
       try {
         await api.createSale(saleToApiPayload(sale));
         await completeRestaurantTablePayment(sale, resolveBranchId());
@@ -615,6 +695,7 @@ export default function DukaPortal() {
         setPosTableLabel(null);
         await applyApiTenantData();
         await refreshCustomersFromApi();
+        setOfflineNotice(null);
         return;
       } catch {
         // fall through to offline queue
@@ -632,12 +713,23 @@ export default function DukaPortal() {
       payload: saleToApiPayload(sale),
       client_timestamp: new Date().toISOString(),
     });
+    setOfflineNotice(saleQueuedOfflineText(isSw));
+    if (tenantStorageId) {
+      const cached = await loadTenantCache(tenantStorageId);
+      if (cached) {
+        await saveTenantCache(tenantStorageId, {
+          ...cached,
+          sales: [sale, ...cached.sales.filter(s => s.id !== sale.id)],
+          savedAt: new Date().toISOString(),
+        });
+      }
+    }
   };
 
   const handleSavePendingSale = async (sale: SaleTransaction) => {
     sale.branchId = sale.branchId || resolveBranchId();
     removeOpenTransaction(tenantStorageId, sale.id);
-    if (isOnline && userRole !== 'super_admin') {
+    if (isOnline && navigator.onLine && userRole !== 'super_admin') {
       try {
         await api.createSale(saleToApiPayload(sale, { finalize: false }));
         await applyApiTenantData();
@@ -965,21 +1057,44 @@ export default function DukaPortal() {
   };
 
   // Sync handler — pushes offline queue to API
-  const handleSync = async () => {
+  const handleSync = async (opts?: { silent?: boolean }) => {
+    if (!isOnline) {
+      setOfflineNotice(offlineBannerText(isSw, pendingSyncQueue.length));
+      return;
+    }
     if (pendingSyncQueue.length === 0 && pendingSyncCount === 0) return;
     try {
-      if (pendingSyncQueue.length) {
-        await api.syncBatch(pendingSyncQueue);
-        setPendingSyncQueue([]);
-        saveSyncQueue(tenantStorageId, []);
+      const result = await flushSyncQueue(tenantStorageId, pendingSyncQueue as import('@/lib/transactionEngine').SyncQueueItem[]);
+      setPendingSyncQueue(result.remaining);
+      setPendingSyncCount(result.remaining.length);
+      if (result.processed > 0) {
+        await applyApiTenantData();
+        if (!opts?.silent) {
+          confetti({ particleCount: 35, spread: 50, origin: { y: 0.6 } });
+        }
+        setOfflineNotice(
+          result.failed > 0
+            ? syncPartialText(isSw, result.processed, result.failed)
+            : syncSuccessText(isSw, result.processed),
+        );
+      } else if (result.failed > 0) {
+        setOfflineNotice(syncPartialText(isSw, 0, result.failed));
+      } else {
+        setOfflineNotice(null);
       }
-      setPendingSyncCount(0);
-      await applyApiTenantData();
-      confetti({ particleCount: 35, spread: 50, origin: { y: 0.6 } });
     } catch {
       setPendingSyncCount(pendingSyncQueue.length);
+      setOfflineNotice(offlineBannerText(isSw, pendingSyncQueue.length));
     }
   };
+
+  useEffect(() => {
+    if (!isOnline || !currentUser || userRole === 'super_admin') return;
+    if (pendingSyncQueue.length === 0) return;
+    setOfflineNotice(backOnlineText(isSw));
+    void handleSync({ silent: true });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOnline, pendingSyncQueue.length, currentUser?.id]);
 
   const handleApproveTenantKyc = async (tenantId: string) => {
     try {
@@ -1014,6 +1129,15 @@ export default function DukaPortal() {
   const upcomingEventsCount = events.filter(e => !e.completed).length;
 
   // Pending approval flow disabled — new tenants are active immediately after register.
+
+  if (!sessionReady && api.hasValidSession()) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-[#f0f2f5]">
+        <div className="w-8 h-8 border-2 border-[#0078D4] border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm font-semibold text-[#605E5C]">{loadingShopText(isSw)}</p>
+      </div>
+    );
+  }
 
   // If active view is explicit Landing Page, render LandingPageView full screen
   if (activeTab === 'landing') {
@@ -1146,9 +1270,8 @@ export default function DukaPortal() {
           businessType={businessType}
           setBusinessType={setBusinessType}
           isOnline={isOnline}
-          setIsOnline={setIsOnline}
           pendingSyncCount={pendingSyncCount}
-          onSync={handleSync}
+          onSync={() => void handleSync()}
           onOpenAIChat={() => {
             setAiInitialPrompt(undefined);
             setIsAIChatOpen(true);
@@ -1167,6 +1290,32 @@ export default function DukaPortal() {
           tenantsList={tenants}
           onSelectTenantToImpersonate={handleImpersonateTenant}
         />
+
+        {(offlineNotice || (!isOnline && currentUser)) && (
+          <div
+            className={`mx-3 mt-2 px-4 py-2.5 rounded-xl text-xs font-semibold border flex items-center justify-between gap-3 shrink-0 ${
+              isOnline
+                ? 'bg-[#0078D4]/10 text-[#0078D4] border-[#0078D4]/25'
+                : 'bg-amber-50 text-amber-900 border-amber-200'
+            }`}
+          >
+            <span>{offlineNotice || offlineBannerText(isSw, pendingSyncCount)}</span>
+            {cacheSavedAt && !isOnline && (
+              <span className="text-[10px] opacity-70 whitespace-nowrap">
+                {isSw ? 'Imesasishwa' : 'Updated'}: {formatCacheAge(cacheSavedAt, isSw)}
+              </span>
+            )}
+            {pendingSyncCount > 0 && isOnline && (
+              <button
+                type="button"
+                onClick={() => void handleSync()}
+                className="px-2.5 py-1 rounded-lg bg-[#0078D4] text-white text-[10px] font-bold shrink-0"
+              >
+                {isSw ? 'Sawazisha' : 'Sync now'}
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Scrollable View Container */}
         <main className={`flex-1 overflow-y-auto p-4 md:p-6 rounded-2xl shadow-sm ${isSuperAdminMode ? 'bg-[#F9F9F7] border border-[#003322]/10' : 'bg-white/80 backdrop-blur-sm border border-[#E1DFDD]/80'}`}>
@@ -1467,6 +1616,7 @@ export default function DukaPortal() {
                       setPosResumeSaleId(null);
                     }}
                     tableContextLabel={posTableLabel ?? undefined}
+                    currentUser={currentUser}
                   />
                 )}
 
@@ -1504,6 +1654,9 @@ export default function DukaPortal() {
                     onCustomersChanged={refreshCustomersFromApi}
                     onOpenAIChatWithPrompt={handleOpenAIChatWithPrompt}
                     currentUser={currentUser}
+                    tenantId={tenantStorageId}
+                    enqueueSyncItem={enqueueSyncItem}
+                    onQueueMutation={notifyQueuedMutation}
                   />
                 )}
 
@@ -1536,6 +1689,9 @@ export default function DukaPortal() {
                     onReceivePO={handleReceivePO}
                     onProductsChanged={refreshProductsFromApi}
                     currentUser={currentUser}
+                    tenantId={tenantStorageId}
+                    enqueueSyncItem={enqueueSyncItem}
+                    onQueueMutation={notifyQueuedMutation}
                   />
                 )}
 

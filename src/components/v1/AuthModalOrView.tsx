@@ -26,7 +26,7 @@ import {
 import { BusinessType, Language, UserRole, VendorApplication, AuthUser } from '@/types/v1';
 import { ALL_BUSINESS_TYPES, getBusinessProfile } from '@/lib/businessEngine';
 import { api } from '@/lib/api';
-import { mapApiUserToAuthUser } from '@/lib/authBridge';
+import { loginAndLoadUser, mapApiUserToAuthUser, persistAuthUser } from '@/lib/authBridge';
 import confetti from 'canvas-confetti';
 
 interface AuthModalOrViewProps {
@@ -92,10 +92,8 @@ export const AuthModalOrView: React.FC<AuthModalOrViewProps> = ({
     setLoginLoading(true);
     const password = loginPassword;
     try {
-      const tokens = await api.login(loginEmail, password);
-      api.setTokens(tokens.access_token, tokens.refresh_token);
-      const me = await api.getMe();
-      onLoginSuccess(mapApiUserToAuthUser(me as Parameters<typeof mapApiUserToAuthUser>[0]));
+      const user = await loginAndLoadUser(loginEmail, password);
+      onLoginSuccess(user);
       onClose();
     } catch {
       setLoginError(isSw ? 'Imeshindikana kuingia. Angalia barua pepe na nenosiri.' : 'Login failed. Check email and password.');
@@ -138,9 +136,11 @@ export const AuthModalOrView: React.FC<AuthModalOrViewProps> = ({
         district: location.trim() || 'Ilala',
       });
       const tokens = await api.login(regEmail.trim(), regPassword);
-      api.setTokens(tokens.access_token, tokens.refresh_token);
+      api.setTokens(tokens.access_token, tokens.refresh_token, tokens.expires_in_days);
       const me = await api.getMe();
-      onLoginSuccess(mapApiUserToAuthUser(me as Parameters<typeof mapApiUserToAuthUser>[0]), { fromRegistration: true });
+      const user = mapApiUserToAuthUser(me as Parameters<typeof mapApiUserToAuthUser>[0]);
+      persistAuthUser(user);
+      onLoginSuccess(user, { fromRegistration: true });
       confetti({ particleCount: 40, spread: 60, origin: { y: 0.6 } });
       onClose();
     } catch (err) {

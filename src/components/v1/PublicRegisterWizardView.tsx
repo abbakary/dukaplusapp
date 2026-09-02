@@ -13,7 +13,7 @@ import confetti from 'canvas-confetti';
 import type { AuthUser, BusinessType, Language, SaaSPlanTier } from '@/types/v1';
 import { ALL_BUSINESS_TYPES, getBusinessProfile } from '@/lib/businessEngine';
 import { api } from '@/lib/api';
-import { mapApiUserToAuthUser } from '@/lib/authBridge';
+import { loginAndLoadUser, mapApiUserToAuthUser, persistAuthUser } from '@/lib/authBridge';
 import { useSaasPlans } from '@/context/SaasPlansContext';
 import { formatPlanPrice, planFeatures, planPeriod } from '@/lib/saasPlans';
 import { BrandLogo } from '@/components/ui/BrandLogo';
@@ -119,10 +119,12 @@ export const PublicRegisterWizardView: React.FC<PublicRegisterWizardViewProps> =
         plan_tier: selectedPlan,
       });
       const tokens = await api.login(regEmail.trim(), regPassword);
-      api.setTokens(tokens.access_token, tokens.refresh_token);
+      api.setTokens(tokens.access_token, tokens.refresh_token, tokens.expires_in_days);
       const me = await api.getMe();
+      const user = mapApiUserToAuthUser(me as Parameters<typeof mapApiUserToAuthUser>[0]);
+      persistAuthUser(user);
       confetti({ particleCount: 40, spread: 60, origin: { y: 0.6 } });
-      onRegisterSuccess(mapApiUserToAuthUser(me as Parameters<typeof mapApiUserToAuthUser>[0]));
+      onRegisterSuccess(user);
     } catch (err) {
       setError(isSw ? `Usajili umeshindikana: ${(err as Error).message}` : `Registration failed: ${(err as Error).message}`);
     } finally {

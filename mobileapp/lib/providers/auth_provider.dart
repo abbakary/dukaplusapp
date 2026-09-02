@@ -83,8 +83,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
 
     // 2. Try live token
-    final token = await ApiClient.readAccessToken();
-    if (token != null) {
+    final hasSession = await ApiClient.hasValidSession();
+    if (hasSession) {
       try {
         final data = await _api.getMe();
         final user = AuthUser.fromJson(data);
@@ -126,6 +126,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await ApiClient.saveTokens(
         tokens['access_token'].toString(),
         tokens['refresh_token'].toString(),
+        expiresInDays: (tokens['expires_in_days'] as num?)?.toInt() ?? 3,
       );
       final data = await _api.getMe();
       final user = AuthUser.fromJson(data);

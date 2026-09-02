@@ -6,26 +6,38 @@ class CartItem {
   final Product product;
   final double quantity;
   final double discountPercent;
+  final double? unitPriceOverride;
 
   const CartItem({
     required this.product,
     this.quantity = 1,
     this.discountPercent = 0,
+    this.unitPriceOverride,
   });
+
+  double get effectiveUnitPrice => unitPriceOverride ?? product.price;
 
   double get lineTotal {
     final disc = discountPercent / 100;
-    return product.price * quantity * (1 - disc);
+    return effectiveUnitPrice * quantity * (1 - disc);
   }
 
-  double get originalTotal => product.price * quantity;
+  double get originalTotal => effectiveUnitPrice * quantity;
   double get discountAmount => originalTotal - lineTotal;
 
-  CartItem copyWith({double? quantity, double? discountPercent}) => CartItem(
-    product: product,
-    quantity: quantity ?? this.quantity,
-    discountPercent: discountPercent ?? this.discountPercent,
-  );
+  CartItem copyWith({
+    double? quantity,
+    double? discountPercent,
+    double? unitPriceOverride,
+    bool clearUnitPriceOverride = false,
+  }) =>
+      CartItem(
+        product: product,
+        quantity: quantity ?? this.quantity,
+        discountPercent: discountPercent ?? this.discountPercent,
+        unitPriceOverride:
+            clearUnitPriceOverride ? null : (unitPriceOverride ?? this.unitPriceOverride),
+      );
 }
 
 @immutable
@@ -79,6 +91,16 @@ class CartState {
 
   CartState updateDiscount(String productId, double pct) => _copy(
     items: items.map((i) => i.product.id == productId ? i.copyWith(discountPercent: pct) : i).toList(),
+  );
+
+  CartState updateUnitPriceOverride(String productId, double? price) => _copy(
+    items: items
+        .map((i) => i.product.id == productId
+            ? (price == null
+                ? i.copyWith(clearUnitPriceOverride: true)
+                : i.copyWith(unitPriceOverride: price))
+            : i)
+        .toList(),
   );
 
   CartState setCustomer(String id, String name) =>

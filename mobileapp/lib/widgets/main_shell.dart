@@ -7,35 +7,54 @@ import '../data/models/user_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/permissions_provider.dart';
+import '../providers/products_provider.dart';
+import '../providers/customers_provider.dart';
+import '../providers/sales_provider.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/locale_provider.dart';
 import '../widgets/drawer_menu_button.dart';
 import '../providers/ai_provider.dart';
+import '../widgets/offline_banner.dart';
 import '../widgets/ai_chat_sheet.dart';
+import '../providers/connectivity_provider.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main Shell
 // ─────────────────────────────────────────────────────────────────────────────
-class MainShell extends ConsumerWidget {
+class MainShell extends ConsumerStatefulWidget {
   final Widget child;
   const MainShell({super.key, required this.child});
 
-  int _tabIndex(List<AppNavItem> tabs, BuildContext context) {
-    final loc = GoRouterState.of(context).matchedLocation;
-    final idx = tabs.indexWhere((t) => loc.startsWith(t.path));
-    return idx < 0 ? 0 : idx;
-  }
+  @override
+  ConsumerState<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends ConsumerState<MainShell> {
+  bool? _wasOnline;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final access    = ref.watch(roleAccessProvider);
     final user      = ref.watch(currentUserProvider);
     final bizType   = ref.watch(businessTypeProvider);
     final primary   = AppColors.forBusiness(bizType);
     final cartCount = ref.watch(cartItemCountProvider);
     final l10n      = ref.watch(appLocalizationsProvider);
+    final isOnline  = ref.watch(isOnlineProvider);
 
-    if (access == null) return Scaffold(body: child);
+    if (_wasOnline == false && isOnline) {
+      Future.microtask(() async {
+        final sync = ref.read(offlineSyncServiceProvider);
+        await sync.syncAll();
+        ref.read(syncRefreshProvider.notifier).state++;
+        ref.read(productsRefreshProvider.notifier).state++;
+        ref.read(customersRefreshProvider.notifier).state++;
+        ref.read(salesRefreshProvider.notifier).state++;
+      });
+    }
+    _wasOnline = isOnline;
+
+    if (access == null) return Scaffold(body: widget.child);
 
     final bottomTabs  = bottomNavFor(access);
     final drawerItems = drawerNavFor(access);
@@ -53,7 +72,12 @@ class MainShell extends ConsumerWidget {
             l10n:        l10n,
             onLogout:    () => ref.read(authProvider.notifier).logout(),
           ),
-          body: child,
+          body: Column(
+            children: [
+              const OfflineBanner(),
+              Expanded(child: widget.child),
+            ],
+          ),
           bottomNavigationBar: bottomTabs.isEmpty
               ? null
               : _BottomNav(
@@ -67,6 +91,12 @@ class MainShell extends ConsumerWidget {
         if (ref.watch(aiChatProvider).isOpen) const AiChatSheet(),
       ],
     );
+  }
+
+  int _tabIndex(List<AppNavItem> tabs, BuildContext context) {
+    final loc = GoRouterState.of(context).matchedLocation;
+    final idx = tabs.indexWhere((t) => loc.startsWith(t.path));
+    return idx < 0 ? 0 : idx;
   }
 }
 

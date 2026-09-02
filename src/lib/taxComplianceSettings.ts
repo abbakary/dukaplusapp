@@ -9,6 +9,10 @@ export interface TaxComplianceSettings {
   maxDiscountPercent: number;
   showDiscountOnReceipts: boolean;
   showDiscountOnDocuments: boolean;
+  cartDiscountEnabled: boolean;
+  priceOverrideEnabled: boolean;
+  partialPaymentEnabled: boolean;
+  negotiationEnabled: boolean;
   showVatOnReceipt: boolean;
   showTraSignature: boolean;
   traEfdSerial: string;
@@ -27,6 +31,10 @@ export const DEFAULT_TAX_COMPLIANCE_SETTINGS: TaxComplianceSettings = {
   maxDiscountPercent: 15,
   showDiscountOnReceipts: true,
   showDiscountOnDocuments: true,
+  cartDiscountEnabled: false,
+  priceOverrideEnabled: false,
+  partialPaymentEnabled: true,
+  negotiationEnabled: true,
   showVatOnReceipt: true,
   showTraSignature: false,
   traEfdSerial: '',
@@ -152,6 +160,11 @@ export interface LineDiscountInput {
   unitPrice: number;
   quantity: number;
   discountPercent?: number;
+}
+
+/** Effective shelf/unit price for a cart line (override or catalog). */
+export function effectiveUnitPrice(unitPrice: number, override?: number): number {
+  return override != null && override > 0 ? override : unitPrice;
 }
 
 /** Subtotal after per-line discounts (respects discountEnabled + max cap). */
