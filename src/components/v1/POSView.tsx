@@ -526,6 +526,11 @@ export const POSView: React.FC<POSViewProps> = ({
 
     if (resumeSaleIdRef.current && onFinalizeResume) {
       try {
+        if (tenantId) {
+          const draftId = openDraftIdRef.current ?? resumeSaleIdRef.current;
+          removeOpenTransaction(tenantId, draftId);
+          removeOpenTransaction(tenantId, resumeSaleIdRef.current);
+        }
         await onFinalizeResume(resumeSaleIdRef.current, sale);
         setLastCompletedSale(sale);
         clearPosSession();
@@ -534,6 +539,12 @@ export const POSView: React.FC<POSViewProps> = ({
         setValidationError(isSw ? 'Imeshindikana kukamilisha mauzo.' : 'Failed to finalize pending sale.');
       }
       return;
+    }
+
+    if (tenantId) {
+      const draftId = openDraftIdRef.current ?? sale.id;
+      removeOpenTransaction(tenantId, draftId);
+      removeOpenTransaction(tenantId, sale.id);
     }
 
     onCompleteSale(sale);

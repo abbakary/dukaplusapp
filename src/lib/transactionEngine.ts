@@ -25,6 +25,13 @@ export const PENDING_STATUSES: TransactionLifecycleStatus[] = [
   'ready_to_complete',
 ];
 
+/** Parked sales awaiting payment — not autosave `open` cart drafts. */
+export const AWAITING_PAYMENT_STATUSES: TransactionLifecycleStatus[] = [
+  'pending_completion',
+  'requires_attention',
+  'ready_to_complete',
+];
+
 export const COMPLETED_STATUSES: TransactionLifecycleStatus[] = [
   'completed',
   'pending_credit',
@@ -301,6 +308,13 @@ export function restoreCartFromDraft(draft: OpenTransactionDraft, products: Prod
 
 export function countPendingTransactions(tenantId: string): number {
   return loadOpenTransactions(tenantId).filter(d => PENDING_STATUSES.includes(d.status)).length;
+}
+
+/** Count only parked sales awaiting payment (excludes in-progress autosave carts). */
+export function countAwaitingPaymentDrafts(tenantId: string): number {
+  return loadOpenTransactions(tenantId).filter(d =>
+    AWAITING_PAYMENT_STATUSES.includes(d.status),
+  ).length;
 }
 
 export function shouldDeductStock(status: TransactionLifecycleStatus): boolean {

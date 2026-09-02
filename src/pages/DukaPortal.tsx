@@ -81,11 +81,12 @@ import { TransactionHistoryView } from '@/components/v1/TransactionHistoryView';
 import { PendingTransactionsView } from '@/components/v1/PendingTransactionsView';
 import {
   analyzeCompletionGaps,
-  countPendingTransactions,
+  countAwaitingPaymentDrafts,
   loadSyncQueue,
   removeOpenTransaction,
   saveSyncQueue,
   shouldDeductStock,
+  AWAITING_PAYMENT_STATUSES,
   type OpenTransactionDraft,
 } from '@/lib/transactionEngine';
 import { TaxComplianceProvider } from '@/context/TaxComplianceContext';
@@ -639,6 +640,9 @@ export default function DukaPortal() {
   };
 
   const handleCompleteSale = async (sale: SaleTransaction) => {
+    if (tenantStorageId) {
+      removeOpenTransaction(tenantStorageId, sale.id);
+    }
     const ctx = getRestaurantPosContext();
     if (ctx) {
       sale.tableId = ctx.tableId ?? undefined;
@@ -646,7 +650,7 @@ export default function DukaPortal() {
       sale.branchId = ctx.branchId;
     }
     const applyLocal = () => {
-      setSales(prev => [sale, ...prev]);
+      setSales(prev => [sale, ...prev.filter(s => s.id !== sale.id)]);
       const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
       if (sale.customerId && shouldDeductStock(sale.status)) {
         setCustomers(prev => prev.map(cust => {
@@ -689,7 +693,7 @@ export default function DukaPortal() {
 
     if (isOnline && navigator.onLine && userRole !== 'super_admin') {
       try {
-        await api.createSale(saleToApiPayload(sale));
+        await api.createSale(saleToApiPayload(sale, { finalize: true }));
         await completeRestaurantTablePayment(sale, resolveBranchId());
         setPosPreloadCart(null);
         setPosTableLabel(null);
@@ -710,7 +714,7 @@ export default function DukaPortal() {
     setPosTableLabel(null);
     enqueueSyncItem({
       entity_type: 'sale', entity_id: sale.id, action: 'create',
-      payload: saleToApiPayload(sale),
+      payload: saleToApiPayload(sale, { finalize: true }),
       client_timestamp: new Date().toISOString(),
     });
     setOfflineNotice(saleQueuedOfflineText(isSw));
@@ -1585,8 +1589,8 @@ export default function DukaPortal() {
                     onOpenPending={() => setActiveTab('pending-transactions')}
                     tenantId={tenantStorageId}
                     pendingCount={
-                      countPendingTransactions(tenantStorageId) +
-                      sales.filter(s => ['open', 'pending_completion', 'requires_attention', 'ready_to_complete'].includes(s.status)).length
+                      countAwaitingPaymentDrafts(tenantStorageId) +
+                      sales.filter(s => AWAITING_PAYMENT_STATUSES.includes(s.status as typeof AWAITING_PAYMENT_STATUSES[number])).length
                     }
                     cashierName={currentUser?.name || 'Cashier'}
                     onOpenAIChatWithPrompt={handleOpenAIChatWithPrompt}
