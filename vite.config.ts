@@ -16,6 +16,11 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
+        injectRegister: 'auto',
+        devOptions: {
+          enabled: true,
+          type: 'module',
+        },
         includeAssets: ['brand_logo.png'],
         manifest: {
           name: 'DukaMkononi — Duka+',
@@ -69,6 +74,16 @@ export default defineConfig(({ mode }) => {
       watch: {
         ignored: ['**/mobileapp/**', '**/android/**', '**/ios/**', '**/.gradle/**'],
       },
+      proxy: {
+        '/api': {
+          target: backendTarget,
+          changeOrigin: true,
+          secure: true,
+        },
+      },
+    },
+    preview: {
+      port: 4173,
       proxy: {
         '/api': {
           target: backendTarget,

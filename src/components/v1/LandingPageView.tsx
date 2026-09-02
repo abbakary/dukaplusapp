@@ -19,6 +19,7 @@ import {
 import { useSaasPlans } from '@/context/SaasPlansContext';
 import { formatPlanPrice, planFeatures, planPeriod } from '@/lib/saasPlans';
 import { BrandLogo } from '@/components/ui/BrandLogo';
+import { PwaInstallPrompt } from '@/components/ui/PwaInstallPrompt';
 
 export interface LandingPageViewProps {
   language: Language;
@@ -128,6 +129,10 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           </div>
         </div>
       </header>
+
+      <div className="max-w-6xl mx-auto pt-4">
+        <PwaInstallPrompt language={language} />
+      </div>
 
       {/* Hero */}
       <section className="relative overflow-hidden">

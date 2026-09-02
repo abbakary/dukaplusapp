@@ -27,6 +27,7 @@ import { BusinessType, Language, UserRole, VendorApplication, AuthUser } from '@
 import { ALL_BUSINESS_TYPES, getBusinessProfile } from '@/lib/businessEngine';
 import { api } from '@/lib/api';
 import { loginAndLoadUser, mapApiUserToAuthUser, persistAuthUser } from '@/lib/authBridge';
+import { formatApiError } from '@/lib/formatApiError';
 import confetti from 'canvas-confetti';
 
 interface AuthModalOrViewProps {
@@ -95,8 +96,8 @@ export const AuthModalOrView: React.FC<AuthModalOrViewProps> = ({
       const user = await loginAndLoadUser(loginEmail, password);
       onLoginSuccess(user);
       onClose();
-    } catch {
-      setLoginError(isSw ? 'Imeshindikana kuingia. Angalia barua pepe na nenosiri.' : 'Login failed. Check email and password.');
+    } catch (err) {
+      setLoginError(formatApiError(err, isSw));
     } finally {
       setLoginLoading(false);
     }
@@ -144,7 +145,7 @@ export const AuthModalOrView: React.FC<AuthModalOrViewProps> = ({
       confetti({ particleCount: 40, spread: 60, origin: { y: 0.6 } });
       onClose();
     } catch (err) {
-      setRegisterError(isSw ? `Usajili umeshindikana: ${(err as Error).message}` : `Registration failed: ${(err as Error).message}`);
+      setRegisterError(formatApiError(err, isSw));
     }
   };
 

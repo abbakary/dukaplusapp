@@ -3,7 +3,10 @@ import { ArrowLeft, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import type { AuthUser, Language } from '@/types/v1';
 import { api } from '@/lib/api';
 import { loginAndLoadUser } from '@/lib/authBridge';
+import { DEMO_ACCOUNTS, DEMO_PASSWORD } from '@/lib/apiConfig';
+import { formatApiError } from '@/lib/formatApiError';
 import { BrandLogo } from '@/components/ui/BrandLogo';
+import { PwaInstallPrompt } from '@/components/ui/PwaInstallPrompt';
 
 interface PublicLoginViewProps {
   language: Language;
@@ -34,8 +37,8 @@ export const PublicLoginView: React.FC<PublicLoginViewProps> = ({
     try {
       const user = await loginAndLoadUser(email, password);
       onLoginSuccess(user);
-    } catch {
-      setError(isSw ? 'Imeshindikana kuingia. Hakikisha email na nenosiri ni sahihi.' : 'Sign in failed. Check your email and password.');
+    } catch (err) {
+      setError(formatApiError(err, isSw));
     } finally {
       setLoading(false);
     }
@@ -51,7 +54,8 @@ export const PublicLoginView: React.FC<PublicLoginViewProps> = ({
       </header>
 
       <div className="flex-1 flex flex-col items-center justify-center px-4 pb-16">
-        <BrandLogo height={48} className="mb-8" />
+        <BrandLogo height={48} className="mb-4" />
+        <PwaInstallPrompt language={language} />
 
         <div className="w-full max-w-md bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
           <h1 className="text-2xl font-serif font-bold text-slate-900">{isSw ? 'Karibu tena' : 'Welcome back'}</h1>
@@ -120,6 +124,24 @@ export const PublicLoginView: React.FC<PublicLoginViewProps> = ({
               {isSw ? 'Jisajili' : 'Get started'}
             </button>
           </p>
+
+          <div className="mt-6 pt-6 border-t border-slate-100">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-2">
+              {isSw ? 'Akaunti za majaribio (demo123)' : 'Demo accounts (password: demo123)'}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {DEMO_ACCOUNTS.filter(a => a.email.includes('@sample.')).slice(0, 4).map(account => (
+                <button
+                  key={account.email}
+                  type="button"
+                  onClick={() => { setEmail(account.email); setPassword(DEMO_PASSWORD); }}
+                  className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 text-slate-700 hover:bg-teal-50 hover:text-teal-800 cursor-pointer"
+                >
+                  {isSw ? account.labelSw : account.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

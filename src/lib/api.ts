@@ -48,7 +48,14 @@ class ApiClient {
     };
     if (this.accessToken) headers['Authorization'] = `Bearer ${this.accessToken}`;
 
-    let res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+    let res: Response;
+    try {
+      res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+    } catch (error) {
+      throw new Error(
+        error instanceof Error ? error.message : 'Network request failed',
+      );
+    }
 
     if (res.status === 401 && this.refreshToken) {
       const refreshed = await this.tryRefresh();
