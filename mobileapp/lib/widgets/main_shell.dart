@@ -12,7 +12,7 @@ import '../providers/customers_provider.dart';
 import '../providers/sales_provider.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/locale_provider.dart';
-import '../widgets/drawer_menu_button.dart';
+import '../widgets/shell_scope.dart';
 import '../providers/ai_provider.dart';
 import '../widgets/offline_banner.dart';
 import '../widgets/ai_chat_sheet.dart';
@@ -31,6 +31,7 @@ class MainShell extends ConsumerStatefulWidget {
 
 class _MainShellState extends ConsumerState<MainShell> {
   bool? _wasOnline;
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
@@ -60,10 +61,12 @@ class _MainShellState extends ConsumerState<MainShell> {
     final drawerItems = drawerNavFor(access);
     final idx         = bottomTabs.isEmpty ? 0 : _tabIndex(bottomTabs, context);
 
-    return Stack(
+    return ShellScope(
+      scaffoldKey: _scaffoldKey,
+      child: Stack(
       children: [
         Scaffold(
-          key: ref.read(shellScaffoldKeyProvider),
+          key: _scaffoldKey,
           drawer: _AppDrawer(
             user:        user,
             access:      access,
@@ -90,6 +93,7 @@ class _MainShellState extends ConsumerState<MainShell> {
         ),
         if (ref.watch(aiChatProvider).isOpen) const AiChatSheet(),
       ],
+    ),
     );
   }
 

@@ -1,4 +1,5 @@
 import type { SaleTransaction } from '@/types/v1';
+import { computeSaleDiscountAmount } from './saleDiscountUtils';
 import type { DocumentRenderData, DocumentType } from './documentTemplates';
 
 const DOC_PREFIX: Record<DocumentType, string> = {
@@ -17,8 +18,9 @@ export function saleToDocumentRenderData(
   documentType: DocumentType,
   options?: { showDiscount?: boolean },
 ): DocumentRenderData {
-  const discount = sale.discountAmount ?? 0;
+  const discount = computeSaleDiscountAmount(sale);
   const subtotalExVat = sale.subtotal ?? sale.total - sale.vatAmount;
+  const showDiscount = Boolean(options?.showDiscount) && discount > 0;
   return {
     documentType,
     documentNumber: saleDocumentNumber(sale, documentType),
@@ -27,14 +29,14 @@ export function saleToDocumentRenderData(
     items: sale.items.map(item => ({
       description: item.productName,
       quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      discountPercent: 0,
+      unitPrice: item.originalUnitPrice ?? item.unitPrice,
+      discountPercent: item.discountPercent ?? 0,
     })),
     subtotal: subtotalExVat,
     discountAmount: discount,
     vatAmount: sale.vatAmount ?? 0,
     total: sale.total,
-    showDiscount: options?.showDiscount ?? discount > 0,
+    showDiscount,
     notes: sale.traEfdSignature
       ? `TRA EFD: ${sale.traEfdSignature}`
       : sale.payments?.length

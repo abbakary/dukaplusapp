@@ -42,6 +42,7 @@ import {
   capDiscountPercent,
   effectiveUnitPrice,
 } from '@/lib/taxComplianceSettings';
+import { computeSaleDiscountAmount, saleGrossSubtotal } from '@/lib/saleDiscountUtils';
 import { resolvePosPricingAccess } from '@/lib/rbac';
 import { api } from '@/lib/api';
 import { mapCustomer, customerToApiPayload } from '@/lib/apiSync';
@@ -1110,27 +1111,39 @@ export const POSView: React.FC<POSViewProps> = ({
               </div>
             )}
 
-            {/* Save & Next (Rapid Capture) + Complete */}
+            {/* Park vs complete — two clearly different sale paths */}
+            <p className="text-[10px] text-[#605E5C] leading-snug px-0.5">
+              {isSw
+                ? 'Chagua moja: Lipa & Kamilisha = mauzo ya kawaida yenye malipo sasa. Hifadhi Bila Malipo = weka foleni, malipo baadaye.'
+                : 'Choose one: Take Payment & Finish = normal sale with payment now. Park Sale = hold cart for later payment.'}
+            </p>
             <div className="grid grid-cols-2 gap-2">
               <button
                 id="btn-save-and-next"
                 type="button"
                 disabled={cart.length === 0}
                 onClick={handleSaveAndNext}
-                className={`py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-[0.98] ${
+                title={isSw ? 'Hifadhi bila malipo — mteja anayefuata' : 'Park sale without payment — serve next customer'}
+                className={`py-2.5 rounded-xl font-bold text-xs flex flex-col items-center justify-center gap-0.5 shadow-md transition-all active:scale-[0.98] ${
                   cart.length === 0
                     ? 'bg-[#EDEBE9] text-[#A19F9D] cursor-not-allowed'
                     : 'bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:brightness-105 cursor-pointer'
                 }`}
               >
-                <Clock className="w-4 h-4" />
-                <span>{isSw ? '⚡ Hifadhi & Mteja Mpya' : '⚡ Save & Next'}</span>
+                <span className="flex items-center gap-1.5">
+                  <Clock className="w-4 h-4" />
+                  {isSw ? 'Hifadhi Bila Malipo' : 'Park Sale (No Payment)'}
+                </span>
+                <span className={`text-[9px] font-semibold ${cart.length === 0 ? 'opacity-60' : 'opacity-90'}`}>
+                  {isSw ? 'Malipo baadaye · mteja mpya' : 'Pay later · next customer'}
+                </span>
               </button>
               <button
                 id="btn-complete-sale"
                 disabled={cart.length === 0}
                 onClick={handleExecuteSale}
-                className={`py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-[0.98] ${
+                title={isSw ? 'Mauzo ya kawaida — chukua malipo sasa' : 'Normal sale — take payment now'}
+                className={`py-2.5 rounded-xl font-bold text-xs flex flex-col items-center justify-center gap-0.5 shadow-md transition-all active:scale-[0.98] ${
                   cart.length === 0
                     ? 'bg-[#EDEBE9] text-[#A19F9D] cursor-not-allowed'
                     : isCustomerMissingForCredit
@@ -1138,12 +1151,17 @@ export const POSView: React.FC<POSViewProps> = ({
                       : 'bg-gradient-to-r from-[#107C10] to-[#0078D4] text-white hover:brightness-105 cursor-pointer'
                 }`}
               >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4" />
                   {isCustomerMissingForCredit
                     ? (isSw ? '⚠️ Chagua Mteja' : '⚠️ Select Customer')
-                    : (isSw ? 'Lipa & Kamilisha' : 'Pay & Complete')}
+                    : (isSw ? 'Lipa & Kamilisha' : 'Take Payment & Finish')}
                 </span>
+                {!isCustomerMissingForCredit && (
+                  <span className={`text-[9px] font-semibold ${cart.length === 0 ? 'opacity-60' : 'opacity-90'}`}>
+                    {isSw ? 'Mauzo ya kawaida · malipo sasa' : 'Normal sale · payment now'}
+                  </span>
+                )}
               </button>
             </div>
             {pendingCount > 0 && onOpenPending && (
@@ -1153,7 +1171,9 @@ export const POSView: React.FC<POSViewProps> = ({
                 className="w-full py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold cursor-pointer flex items-center justify-center gap-2"
               >
                 <Clock className="w-3.5 h-3.5" />
-                {isSw ? `${pendingCount} mauzo yanasubiri ukamilishaji` : `${pendingCount} pending — tap to complete`}
+                {isSw
+                  ? `${pendingCount} mauzo yanasubiri malipo — bofya kukamilisha`
+                  : `${pendingCount} sale(s) awaiting payment — tap to complete`}
               </button>
             )}
           </div>
@@ -1296,14 +1316,33 @@ export const POSView: React.FC<POSViewProps> = ({
 
           <div className="border-t border-b border-dashed border-[#C8C6C4] py-2 space-y-1">
             {lastCompletedSale.items.map((it, idx) => (
-              <div key={idx} className="flex justify-between">
-                <span>{it.productName} (x{it.quantity})</span>
-                <span className="font-mono">{formatTSh(it.total)}</span>
+              <div key={idx} className="flex justify-between gap-2">
+                <span className="min-w-0">
+                  {it.productName} (x{it.quantity})
+                  {(it.discountPercent ?? 0) > 0 && taxSettings.discountEnabled && (
+                    <span className="text-amber-700"> · -{it.discountPercent}%</span>
+                  )}
+                </span>
+                <span className="font-mono shrink-0">{formatTSh(it.total)}</span>
               </div>
             ))}
           </div>
 
           <div className="space-y-1 font-mono">
+            {taxSettings.discountEnabled &&
+              taxSettings.showDiscountOnReceipts &&
+              computeSaleDiscountAmount(lastCompletedSale) > 0 && (
+                <>
+                  <div className="flex justify-between">
+                    <span>{isSw ? 'JUMLA KABLA YA PUNGUZO:' : 'GROSS SUBTOTAL:'}</span>
+                    <span>{formatTSh(saleGrossSubtotal(lastCompletedSale))}</span>
+                  </div>
+                  <div className="flex justify-between text-amber-700 font-bold">
+                    <span>{isSw ? 'PUNGUZO:' : 'DISCOUNT:'}</span>
+                    <span>- {formatTSh(computeSaleDiscountAmount(lastCompletedSale))}</span>
+                  </div>
+                </>
+              )}
             <div className="flex justify-between">
               <span>SUBTOTAL (EXCL VAT):</span>
               <span>{formatTSh(lastCompletedSale.subtotal)}</span>

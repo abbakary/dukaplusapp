@@ -79,6 +79,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final l10n = ref.watch(appLocalizationsProvider);
     final isLoading = ref.watch(authProvider.select((s) => s.isLoading));
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       body: Container(
         decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
         child: SafeArea(

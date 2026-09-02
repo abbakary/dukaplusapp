@@ -64,62 +64,106 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   void _showDemoSheet() {
-    final l10n = ref.read(appLocalizationsProvider);
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => Material(
-        color: Colors.transparent,
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      useSafeArea: true,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.62,
+        minChildSize: 0.35,
+        maxChildSize: 0.92,
+        expand: false,
+        builder: (_, scrollController) => Material(
+          color: Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          clipBehavior: Clip.antiAlias,
           child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              const SizedBox(height: 10),
               Center(
-                child: Container(width: 40, height: 4,
+                child: Container(
+                  width: 40,
+                  height: 4,
                   decoration: BoxDecoration(
                     color: AppColors.border,
-                    borderRadius: BorderRadius.circular(2))),
-              ),
-              const SizedBox(height: 14),
-              Text('Demo accounts',
-                style: const TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary)),
-              Text('Password: ${DemoAccounts.demoPassword}',
-                style: const TextStyle(
-                  fontSize: 12, color: AppColors.textSecondary)),
-              const SizedBox(height: 12),
-              ...DemoAccounts.accounts.map((d) => ListTile(
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-                leading: CircleAvatar(
-                  radius: 18,
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                  child: Text(d.label[0],
-                    style: const TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w700,
-                      color: AppColors.primary)),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-                title: Text(d.label,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                subtitle: Text(d.role,
-                  style: const TextStyle(fontSize: 11, color: AppColors.textHint)),
-                trailing: const Icon(Icons.arrow_forward_ios_rounded,
-                  size: 14, color: AppColors.textHint),
-                onTap: () {
-                  Navigator.pop(context);
-                  setState(() {
-                    _emailCtrl.text = d.email;
-                    _passCtrl.text  = DemoAccounts.demoPassword;
-                  });
-                },
-              )),
+              ),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 14, 20, 4),
+                child: Text(
+                  'Demo accounts',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                child: Text(
+                  'Password: ${DemoAccounts.demoPassword}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
+                  itemCount: DemoAccounts.accounts.length,
+                  itemBuilder: (_, i) {
+                    final d = DemoAccounts.accounts[i];
+                    return ListTile(
+                      dense: true,
+                      leading: CircleAvatar(
+                        radius: 18,
+                        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                        child: Text(
+                          d.label[0],
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                      title: Text(
+                        d.label,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Text(
+                        d.role,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textHint,
+                        ),
+                      ),
+                      trailing: const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: AppColors.textHint,
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        setState(() {
+                          _emailCtrl.text = d.email;
+                          _passCtrl.text = DemoAccounts.demoPassword;
+                        });
+                      },
+                    );
+                  },
+                ),
+              ),
             ],
           ),
         ),

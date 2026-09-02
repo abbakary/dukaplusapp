@@ -254,32 +254,39 @@ class SettingsScreen extends ConsumerWidget {
   void _showLanguagePicker(BuildContext context, WidgetRef ref, AppLocalizations l10n) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(l10n.chooseLanguage, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-            ),
-            ListTile(
-              title: Text(l10n.languageSw),
-              trailing: ref.watch(localeProvider) == AppLanguage.sw ? const Icon(Icons.check, color: Color(0xFF0d9488)) : null,
-              onTap: () {
-                ref.read(localeProvider.notifier).setLanguage(AppLanguage.sw);
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              title: Text(l10n.languageEn),
-              trailing: ref.watch(localeProvider) == AppLanguage.en ? const Icon(Icons.check, color: Color(0xFF0d9488)) : null,
-              onTap: () {
-                ref.read(localeProvider.notifier).setLanguage(AppLanguage.en);
-                Navigator.pop(context);
-              },
-            ),
-          ],
+      backgroundColor: Colors.transparent,
+      useSafeArea: true,
+      builder: (_) => Material(
+        color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        clipBehavior: Clip.antiAlias,
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(l10n.chooseLanguage, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              ),
+              ListTile(
+                title: Text(l10n.languageSw),
+                trailing: ref.watch(localeProvider) == AppLanguage.sw ? const Icon(Icons.check, color: Color(0xFF0d9488)) : null,
+                onTap: () {
+                  ref.read(localeProvider.notifier).setLanguage(AppLanguage.sw);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                title: Text(l10n.languageEn),
+                trailing: ref.watch(localeProvider) == AppLanguage.en ? const Icon(Icons.check, color: Color(0xFF0d9488)) : null,
+                onTap: () {
+                  ref.read(localeProvider.notifier).setLanguage(AppLanguage.en);
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

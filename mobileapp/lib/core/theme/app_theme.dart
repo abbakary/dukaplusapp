@@ -17,28 +17,34 @@ class AppTheme {
     );
 
     final base = GoogleFonts.poppinsTextTheme();
+    const fontFallback = ['Noto Sans', 'Roboto', 'Arial', 'sans-serif'];
+
+    TextStyle? withFallback(TextStyle? style) =>
+        style?.copyWith(fontFamilyFallback: fontFallback);
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: cs,
+      fontFamily: GoogleFonts.poppins().fontFamily,
+      fontFamilyFallback: fontFallback,
       // Slightly more visible background so it doesn't look pure white
       scaffoldBackgroundColor: const Color(0xFFECF0F6),
       // ── Typography ─────────────────────────────────────────────────
       textTheme: base.copyWith(
-        displayLarge:   base.displayLarge?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w800, letterSpacing: -1.0),
-        displayMedium:  base.displayMedium?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w700, letterSpacing: -0.5),
-        headlineLarge:  base.headlineLarge?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w700, fontSize: 24, letterSpacing: -0.3),
-        headlineMedium: base.headlineMedium?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 20),
-        headlineSmall:  base.headlineSmall?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 18),
-        titleLarge:   base.titleLarge?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 16),
-        titleMedium:  base.titleMedium?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w500, fontSize: 15),
-        titleSmall:   base.titleSmall?.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w500, fontSize: 13),
-        bodyLarge:    base.bodyLarge?.copyWith(color: AppColors.textPrimary, fontSize: 15),
-        bodyMedium:   base.bodyMedium?.copyWith(color: AppColors.textSecondary, fontSize: 14),
-        bodySmall:    base.bodySmall?.copyWith(color: AppColors.textHint, fontSize: 12),
-        labelLarge:   base.labelLarge?.copyWith(fontWeight: FontWeight.w600, fontSize: 15),
-        labelMedium:  base.labelMedium?.copyWith(fontWeight: FontWeight.w500, fontSize: 13),
-        labelSmall:   base.labelSmall?.copyWith(fontSize: 11),
+        displayLarge:   withFallback(base.displayLarge?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w800, letterSpacing: -1.0)),
+        displayMedium:  withFallback(base.displayMedium?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
+        headlineLarge:  withFallback(base.headlineLarge?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w700, fontSize: 24, letterSpacing: -0.3)),
+        headlineMedium: withFallback(base.headlineMedium?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 20)),
+        headlineSmall:  withFallback(base.headlineSmall?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 18)),
+        titleLarge:   withFallback(base.titleLarge?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 16)),
+        titleMedium:  withFallback(base.titleMedium?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w500, fontSize: 15)),
+        titleSmall:   withFallback(base.titleSmall?.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w500, fontSize: 13)),
+        bodyLarge:    withFallback(base.bodyLarge?.copyWith(color: AppColors.textPrimary, fontSize: 15)),
+        bodyMedium:   withFallback(base.bodyMedium?.copyWith(color: AppColors.textSecondary, fontSize: 14)),
+        bodySmall:    withFallback(base.bodySmall?.copyWith(color: AppColors.textHint, fontSize: 12)),
+        labelLarge:   withFallback(base.labelLarge?.copyWith(fontWeight: FontWeight.w600, fontSize: 15)),
+        labelMedium:  withFallback(base.labelMedium?.copyWith(fontWeight: FontWeight.w500, fontSize: 13)),
+        labelSmall:   withFallback(base.labelSmall?.copyWith(fontSize: 11)),
       ),
       // ── AppBar ─────────────────────────────────────────────────────
       appBarTheme: AppBarTheme(

@@ -243,7 +243,9 @@ class _ProductTile extends ConsumerWidget {
       child: Material(
         color: Colors.white,
         child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        visualDensity: VisualDensity.compact,
+        isThreeLine: product.batchNumber != null || product.expiryDate != null,
         splashColor: primary.withValues(alpha: 0.08),
         hoverColor: primary.withValues(alpha: 0.04),
         leading: Container(
@@ -275,36 +277,49 @@ class _ProductTile extends ConsumerWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(AppFormatters.tsh(product.price),
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: primary)),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('${product.stock.toStringAsFixed(0)} ${product.unit}',
-                      style: TextStyle(fontSize: 11, color: statusColor, fontWeight: FontWeight.w500)),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: statusColor,
-                        borderRadius: BorderRadius.circular(4),
+            SizedBox(
+              width: 88,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(AppFormatters.tsh(product.price),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: primary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 2),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text('${product.stock.toStringAsFixed(0)} ${product.unit}',
+                          style: TextStyle(fontSize: 10, color: statusColor, fontWeight: FontWeight.w500),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
                       ),
-                      child: Text(statusLabel,
-                        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700)),
-                    ),
-                  ],
-                ),
-              ],
+                      const SizedBox(width: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: statusColor,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(statusLabel,
+                          style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w700)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
             IconButton(
               icon: Icon(Icons.qr_code_rounded, size: 20, color: primary.withValues(alpha: 0.8)),
               onPressed: () => showProductQrSheet(context, product: product),
               tooltip: l10n.showQr,
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             ),
           ],
         ),
@@ -593,30 +608,30 @@ class _FilterSheet extends ConsumerWidget {
 
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
+      child: Material(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(l10n.filterProducts, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 16),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(l10n.lowStockOnly),
-            value: filter.lowStockOnly,
-            activeColor: primary,
-            onChanged: (_) => ref.read(productFilterProvider.notifier).toggleLowStock(),
-          ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(l10n.expiringItems),
-            value: filter.expiringOnly,
-            activeColor: primary,
-            onChanged: (_) => ref.read(productFilterProvider.notifier).toggleExpiring(),
-          ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.filterProducts, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.lowStockOnly),
+              value: filter.lowStockOnly,
+              activeColor: primary,
+              onChanged: (_) => ref.read(productFilterProvider.notifier).toggleLowStock(),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.expiringItems),
+              value: filter.expiringOnly,
+              activeColor: primary,
+              onChanged: (_) => ref.read(productFilterProvider.notifier).toggleExpiring(),
+            ),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -640,6 +655,7 @@ class _FilterSheet extends ConsumerWidget {
           ),
           const SafeArea(top: false, child: SizedBox.shrink()),
         ],
+        ),
       ),
     );
   }

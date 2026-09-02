@@ -29,27 +29,50 @@ class EmptyState extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // When the available height is very small, show a compact row.
-        if (constraints.maxHeight < 140) {
+        // Tight areas (e.g. POS grid slot beside banners) — compact layout only.
+        if (constraints.maxHeight < 220) {
+          final showAction =
+              actionLabel != null && onAction != null && constraints.maxHeight >= 96;
           return Center(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: 20, color: primary.withValues(alpha: 0.5)),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textSecondary,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icon, size: 20, color: primary.withValues(alpha: 0.5)),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textSecondary,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                  if (showAction) ...[
+                    const SizedBox(height: 4),
+                    TextButton(
+                      onPressed: onAction,
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(actionLabel!, style: const TextStyle(fontSize: 12)),
+                    ),
+                  ],
+                ],
+              ),
             ),
           );
         }

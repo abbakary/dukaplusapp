@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/product_model.dart';
+import '../core/utils/network_errors.dart';
 import '../data/services/tenant_cache_service.dart';
 import 'api_provider.dart';
 import 'auth_provider.dart';
@@ -17,13 +18,26 @@ final productsProvider = FutureProvider.autoDispose<List<Product>>((ref) async {
   final api = ref.read(apiClientProvider);
   try {
     final raw = await api.getAllProducts();
-    final products =
-        raw.map((e) => Product.fromJson(e as Map<String, dynamic>)).toList();
-    await _tenantCache.saveProducts(tenantId, products);
+    final products = <Product>[];
+    for (final entry in raw) {
+      if (entry is! Map) continue;
+      try {
+        products.add(Product.fromJson(Map<String, dynamic>.from(entry)));
+      } catch (_) {
+        // Skip malformed rows instead of failing the whole catalog.
+      }
+    }
+    try {
+      await _tenantCache.saveProducts(tenantId, products);
+    } catch (_) {
+      // Cache is best-effort — never block POS when save fails (e.g. web quota).
+    }
     ref.read(isOnlineProvider.notifier).setOnline(true);
     return products;
-  } catch (_) {
-    ref.read(isOnlineProvider.notifier).setOnline(false);
+  } catch (e) {
+    if (isNetworkError(e)) {
+      ref.read(isOnlineProvider.notifier).setOnline(false);
+    }
     final cached = await _tenantCache.loadProducts(tenantId);
     if (cached != null && cached.isNotEmpty) return cached;
     rethrow;

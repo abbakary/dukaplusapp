@@ -65,10 +65,20 @@ class Product {
     description:  j['description']?.toString(),
     location:     j['location']?.toString(),
     isDrug:       j['is_drug'] == true,
-    branchStock:  (j['branch_stock'] as Map<String, dynamic>? ?? {}).map(
-                    (k, v) => MapEntry(k, _d(v))),
-    metadata:     (j['metadata'] as Map<String, dynamic>?) ?? {},
+    metadata: _readMap(j['metadata_json'] ?? j['metadata']),
+    branchStock: _readDoubleMap(j['branch_stock']),
   );
+
+  static Map<String, dynamic> _readMap(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) return Map<String, dynamic>.from(value);
+    return const {};
+  }
+
+  static Map<String, double> _readDoubleMap(dynamic value) {
+    final map = _readMap(value);
+    return map.map((k, v) => MapEntry(k, _d(v)));
+  }
 
   Map<String, dynamic> toJson() => {
     'id': id, 'name': name, 'category': category, 'sku': sku,

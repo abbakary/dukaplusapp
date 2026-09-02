@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'shell_scope.dart';
 
-final shellScaffoldKeyProvider =
-    Provider<GlobalKey<ScaffoldState>>((ref) => GlobalKey<ScaffoldState>());
-
-class DrawerMenuButton extends ConsumerWidget {
+class DrawerMenuButton extends StatelessWidget {
   final Color? color;
   const DrawerMenuButton({super.key, this.color});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return IconButton(
       icon: Icon(Icons.menu_rounded, color: color ?? Colors.white),
-      onPressed: () =>
-          ref.read(shellScaffoldKeyProvider).currentState?.openDrawer(),
+      onPressed: () {
+        final shellKey = ShellScope.maybeOf(context)?.scaffoldKey;
+        shellKey?.currentState?.openDrawer();
+      },
     );
   }
 }

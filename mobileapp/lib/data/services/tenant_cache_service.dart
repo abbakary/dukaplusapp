@@ -1,54 +1,69 @@
 import 'dart:convert';
-import 'dart:io';
 
-import 'package:path_provider/path_provider.dart';
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/product_model.dart';
-import '../models/customer_model.dart';
+import '../../data/models/customer_model.dart';
+import '../../data/models/product_model.dart';
+import 'tenant_cache_io.dart' if (dart.library.html) 'tenant_cache_web.dart';
 
-/// File-based tenant cache — supports large catalogs (IndexedDB equivalent on mobile).
+/// Tenant product/customer cache — files on mobile, SharedPreferences on web.
 class TenantCacheService {
-  Future<File> _file(String tenantId, String suffix) async {
-    final dir = await getApplicationDocumentsDirectory();
-    final safe = tenantId.replaceAll(RegExp(r'[^\w.-]'), '_');
-    return File('${dir.path}/duka_cache_${safe}_$suffix.json');
-  }
-
   Future<void> saveProducts(String tenantId, List<Product> products) async {
-    final file = await _file(tenantId, 'products');
-    await file.writeAsString(jsonEncode({
+    final payload = jsonEncode({
       'savedAt': DateTime.now().toIso8601String(),
       'items': products.map((p) => p.toJson()).toList(),
-    }));
+    });
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_prefKey(tenantId, 'products'), payload);
+      return;
+    }
+    await saveTenantCacheFile(tenantId, 'products', payload);
   }
 
   Future<List<Product>?> loadProducts(String tenantId) async {
     try {
-      final file = await _file(tenantId, 'products');
-      if (!await file.exists()) return null;
-      final j = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
+      final raw = kIsWeb
+          ? (await SharedPreferences.getInstance())
+              .getString(_prefKey(tenantId, 'products'))
+          : await readTenantCacheFile(tenantId, 'products');
+      if (raw == null || raw.isEmpty) return null;
+      final j = jsonDecode(raw) as Map<String, dynamic>;
       final items = j['items'] as List<dynamic>? ?? [];
-      return items.map((e) => Product.fromJson(e as Map<String, dynamic>)).toList();
+      return items
+          .map((e) => Product.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
     } catch (_) {
       return null;
     }
   }
 
   Future<void> saveCustomers(String tenantId, List<Customer> customers) async {
-    final file = await _file(tenantId, 'customers');
-    await file.writeAsString(jsonEncode({
+    final payload = jsonEncode({
       'savedAt': DateTime.now().toIso8601String(),
       'items': customers.map((c) => c.toJson()).toList(),
-    }));
+    });
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_prefKey(tenantId, 'customers'), payload);
+      return;
+    }
+    await saveTenantCacheFile(tenantId, 'customers', payload);
   }
 
   Future<List<Customer>?> loadCustomers(String tenantId) async {
     try {
-      final file = await _file(tenantId, 'customers');
-      if (!await file.exists()) return null;
-      final j = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
+      final raw = kIsWeb
+          ? (await SharedPreferences.getInstance())
+              .getString(_prefKey(tenantId, 'customers'))
+          : await readTenantCacheFile(tenantId, 'customers');
+      if (raw == null || raw.isEmpty) return null;
+      final j = jsonDecode(raw) as Map<String, dynamic>;
       final items = j['items'] as List<dynamic>? ?? [];
-      return items.map((e) => Customer.fromJson(e as Map<String, dynamic>)).toList();
+      return items
+          .map((e) => Customer.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
     } catch (_) {
       return null;
     }
@@ -56,12 +71,20 @@ class TenantCacheService {
 
   Future<String?> productsSavedAt(String tenantId) async {
     try {
-      final file = await _file(tenantId, 'products');
-      if (!await file.exists()) return null;
-      final j = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
+      final raw = kIsWeb
+          ? (await SharedPreferences.getInstance())
+              .getString(_prefKey(tenantId, 'products'))
+          : await readTenantCacheFile(tenantId, 'products');
+      if (raw == null || raw.isEmpty) return null;
+      final j = jsonDecode(raw) as Map<String, dynamic>;
       return j['savedAt']?.toString();
     } catch (_) {
       return null;
     }
+  }
+
+  String _prefKey(String tenantId, String suffix) {
+    final safe = tenantId.replaceAll(RegExp(r'[^\w.-]'), '_');
+    return 'duka_cache_${safe}_$suffix';
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/customer_model.dart';
+import '../core/utils/network_errors.dart';
 import '../data/services/tenant_cache_service.dart';
 import 'api_provider.dart';
 import 'auth_provider.dart';
@@ -18,11 +19,15 @@ final customersProvider = FutureProvider.autoDispose<List<Customer>>((ref) async
     final raw = await api.getCustomers();
     final customers =
         raw.map((e) => Customer.fromJson(e as Map<String, dynamic>)).toList();
-    await _tenantCache.saveCustomers(tenantId, customers);
+    try {
+      await _tenantCache.saveCustomers(tenantId, customers);
+    } catch (_) {}
     ref.read(isOnlineProvider.notifier).setOnline(true);
     return customers;
-  } catch (_) {
-    ref.read(isOnlineProvider.notifier).setOnline(false);
+  } catch (e) {
+    if (isNetworkError(e)) {
+      ref.read(isOnlineProvider.notifier).setOnline(false);
+    }
     final cached = await _tenantCache.loadCustomers(tenantId);
     if (cached != null && cached.isNotEmpty) return cached;
     rethrow;

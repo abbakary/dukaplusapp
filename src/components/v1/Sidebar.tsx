@@ -258,8 +258,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       },
       {
         id: 'pending-transactions',
-        labelEn: 'Uncompleted Sales',
-        labelSw: 'Mauzo Yasiyokamilika',
+        labelEn: 'Pending Sales',
+        labelSw: 'Yanasubiri Malipo',
         icon: Clock,
         activeWhen: v => v === 'pending-transactions',
         visible: canSeePOS,

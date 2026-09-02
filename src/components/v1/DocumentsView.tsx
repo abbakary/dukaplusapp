@@ -37,8 +37,8 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ language }) => {
         </h2>
         <p className="text-sm text-[#605E5C] mt-1">
           {isSw
-            ? 'Simamia violezo vya noti ya uwasilishaji, noti ya agizo, na ankara. Pakua PDF au chagua muundo unaotumika.'
-            : 'Manage delivery note, order note, and invoice templates. Download PDF samples or pick your active layout.'}
+            ? 'Pakia nembo yako na simamia violezo vya noti ya uwasilishaji, noti ya agizo, na ankara. Pakua PDF au chagua muundo unaotumika.'
+            : 'Upload your logo and manage delivery note, order note, and invoice templates. Download PDF samples or pick your active layout.'}
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5">

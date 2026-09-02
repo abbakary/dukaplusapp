@@ -1532,7 +1532,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   className="w-full py-2.5 rounded-xl bg-[#107C10] hover:bg-[#0E6A0E] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-colors"
                 >
                   <ShoppingBag className="w-4 h-4" />
-                  <span>{isSw ? 'Fungua POS & Scanner' : 'Open Fast POS'}</span>
+                  <span>{isSw ? 'Fungua POS' : 'Open POS Register'}</span>
                 </button>
               </div>
             </div>

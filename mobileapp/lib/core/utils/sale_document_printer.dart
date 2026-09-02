@@ -6,8 +6,10 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 import '../config/document_templates.dart';
+import '../config/business_settings.dart';
 import '../../data/models/sale_model.dart';
 import 'formatters.dart';
+import 'sale_discount_utils.dart';
 
 String saleDocumentNumber(SaleTransaction sale, DocumentType type) {
   final base = sale.receiptNumber.replaceAll(RegExp(r'\s+'), '-');
@@ -29,12 +31,14 @@ Future<void> printSaleDocument({
   required DocumentType type,
   required TenantDocumentConfig config,
   required bool isSw,
+  BusinessSettings? settings,
 }) async {
   final bytes = await buildSaleDocumentPdf(
     sale: sale,
     type: type,
     config: config,
     isSw: isSw,
+    settings: settings,
   );
   final title = '${documentTypeTitle(type, isSw)} ${sale.receiptNumber}';
   await Printing.layoutPdf(onLayout: (_) async => bytes, name: title);
@@ -45,9 +49,14 @@ Future<Uint8List> buildSaleDocumentPdf({
   required DocumentType type,
   required TenantDocumentConfig config,
   required bool isSw,
+  BusinessSettings? settings,
 }) async {
   final tpl = activeTemplateFor(config, type);
   final branding = config.branding;
+  final showDiscount = (settings?.showDiscountOnDocuments ?? true) &&
+      (settings?.discountEnabled ?? true);
+  final discount = computeSaleDiscountAmount(sale);
+  final gross = saleGrossSubtotal(sale);
   final doc = pw.Document();
   final primary = PdfColor.fromInt(tpl.theme.primary.toARGB32());
 
@@ -133,12 +142,17 @@ Future<Uint8List> buildSaleDocumentPdf({
             isSw ? 'Jumla' : 'Total',
           ],
           data: sale.items
-              .map((i) => [
-                    i.productName,
-                    i.quantity.toStringAsFixed(i.quantity % 1 == 0 ? 0 : 1),
-                    AppFormatters.tsh(i.unitPrice),
-                    AppFormatters.tsh(i.total),
-                  ])
+              .map((i) {
+                final label = i.discountPercent > 0
+                    ? '${i.productName} (-${i.discountPercent.toStringAsFixed(0)}%)'
+                    : i.productName;
+                return [
+                  label,
+                  i.quantity.toStringAsFixed(i.quantity % 1 == 0 ? 0 : 1),
+                  AppFormatters.tsh(i.originalUnitPrice ?? i.unitPrice),
+                  AppFormatters.tsh(i.total),
+                ];
+              })
               .toList(),
           headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9, color: primary),
           cellStyle: const pw.TextStyle(fontSize: 9),
@@ -157,6 +171,16 @@ Future<Uint8List> buildSaleDocumentPdf({
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.end,
             children: [
+              if (showDiscount && discount > 0) ...[
+                pw.Text(
+                  '${isSw ? 'Jumla kabla ya punguzo' : 'Gross subtotal'}: ${AppFormatters.tsh(gross)}',
+                  style: const pw.TextStyle(fontSize: 10),
+                ),
+                pw.Text(
+                  '${isSw ? 'Punguzo' : 'Discount'}: - ${AppFormatters.tsh(discount)}',
+                  style: const pw.TextStyle(fontSize: 10, color: PdfColors.orange800),
+                ),
+              ],
               pw.Text('Subtotal: ${AppFormatters.tsh(sale.subtotal)}', style: const pw.TextStyle(fontSize: 10)),
               pw.Text('VAT (18%): ${AppFormatters.tsh(sale.vatAmount)}', style: const pw.TextStyle(fontSize: 10)),
               pw.Text(

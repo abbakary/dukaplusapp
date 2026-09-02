@@ -196,7 +196,7 @@ class _HeroBanner extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.bolt_rounded, color: Colors.white, size: 32),
+            const Icon(Icons.pending_actions_rounded, color: Colors.white, size: 32),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

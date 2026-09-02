@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../../core/utils/sale_discount_utils.dart';
+
 enum SaleType   { full, partial, credit }
 enum SaleStatus {
   open,
@@ -18,6 +20,8 @@ class SaleItem {
   final double quantity;
   final double unitPrice;
   final double total;
+  final double discountPercent;
+  final double? originalUnitPrice;
 
   const SaleItem({
     required this.productId,
@@ -25,6 +29,8 @@ class SaleItem {
     required this.quantity,
     required this.unitPrice,
     required this.total,
+    this.discountPercent = 0,
+    this.originalUnitPrice,
   });
 
   factory SaleItem.fromJson(Map<String, dynamic> j) => SaleItem(
@@ -33,11 +39,15 @@ class SaleItem {
     quantity:    _d(j['quantity']),
     unitPrice:   _d(j['unit_price']),
     total:       _d(j['total'] ?? j['total_price']),
+    discountPercent: _d(j['discount_percent']),
+    originalUnitPrice: j['original_unit_price'] != null ? _d(j['original_unit_price']) : null,
   );
 
   Map<String, dynamic> toJson() => {
     'product_id': productId, 'product_name': productName,
     'quantity': quantity, 'unit_price': unitPrice, 'total': total,
+    'discount_percent': discountPercent,
+    if (originalUnitPrice != null) 'original_unit_price': originalUnitPrice,
   };
 
   static double _d(dynamic v) => v == null ? 0.0 : double.tryParse(v.toString()) ?? 0.0;
@@ -75,6 +85,7 @@ class SaleTransaction {
   final String? customerName;
   final List<SaleItem> items;
   final double subtotal;
+  final double discountAmount;
   final double vatAmount;
   final double total;
   final double paidAmount;
@@ -95,6 +106,7 @@ class SaleTransaction {
     this.customerName,
     required this.items,
     required this.subtotal,
+    this.discountAmount = 0,
     required this.vatAmount,
     required this.total,
     required this.paidAmount,
@@ -108,33 +120,67 @@ class SaleTransaction {
     this.branchId,
   });
 
-  factory SaleTransaction.fromJson(Map<String, dynamic> j) => SaleTransaction(
-    id:               j['id']?.toString() ?? '',
-    receiptNumber:    j['receipt_number']?.toString() ?? '',
-    date:             j['date'] != null ? DateTime.parse(j['date'].toString()) : DateTime.now(),
-    customerId:       j['customer_id']?.toString(),
-    customerName:     j['customer_name']?.toString(),
-    items:            (j['items'] as List? ?? []).map((e) => SaleItem.fromJson(e as Map<String, dynamic>)).toList(),
-    subtotal:         _d(j['subtotal']),
-    vatAmount:        _d(j['vat_amount']),
-    total:            _d(j['total']),
-    paidAmount:       _d(j['paid_amount']),
-    balanceRemaining: _d(j['balance_remaining']),
-    payments:         (j['payments'] as List? ?? []).map((e) => PaymentBreakdown.fromJson(e as Map<String, dynamic>)).toList(),
-    type:             _saleType((j['sale_type'] ?? j['type'])?.toString()),
-    cashierName:      j['cashier_name']?.toString() ?? '',
-    traEfdSignature:  j['tra_efd_signature']?.toString(),
-    status:           _status(j['status']?.toString()),
-    tableId:          j['table_id']?.toString(),
-    branchId:         j['branch_id']?.toString(),
-  );
+  factory SaleTransaction.fromJson(Map<String, dynamic> j) {
+    final items = (j['items'] as List? ?? [])
+        .map((e) => SaleItem.fromJson(e as Map<String, dynamic>))
+        .toList();
+    final sale = SaleTransaction(
+      id:               j['id']?.toString() ?? '',
+      receiptNumber:    j['receipt_number']?.toString() ?? '',
+      date:             j['date'] != null ? DateTime.parse(j['date'].toString()) : DateTime.now(),
+      customerId:       j['customer_id']?.toString(),
+      customerName:     j['customer_name']?.toString(),
+      items:            items,
+      subtotal:         _d(j['subtotal']),
+      discountAmount:   _d(j['discount_amount']),
+      vatAmount:        _d(j['vat_amount']),
+      total:            _d(j['total']),
+      paidAmount:       _d(j['paid_amount']),
+      balanceRemaining: _d(j['balance_remaining']),
+      payments:         (j['payments'] as List? ?? []).map((e) => PaymentBreakdown.fromJson(e as Map<String, dynamic>)).toList(),
+      type:             _saleType((j['sale_type'] ?? j['type'])?.toString()),
+      cashierName:      j['cashier_name']?.toString() ?? '',
+      traEfdSignature:  j['tra_efd_signature']?.toString(),
+      status:           _status(j['status']?.toString()),
+      tableId:          j['table_id']?.toString(),
+      branchId:         j['branch_id']?.toString(),
+    );
+    return sale.copyWithDiscountResolved();
+  }
+
+  SaleTransaction copyWithDiscountResolved() =>
+      discountAmount > 0 ? this : copyWith(discountAmount: computeSaleDiscountAmount(this));
+
+  SaleTransaction copyWith({double? discountAmount}) => SaleTransaction(
+        id: id,
+        receiptNumber: receiptNumber,
+        date: date,
+        customerId: customerId,
+        customerName: customerName,
+        items: items,
+        subtotal: subtotal,
+        discountAmount: discountAmount ?? this.discountAmount,
+        vatAmount: vatAmount,
+        total: total,
+        paidAmount: paidAmount,
+        balanceRemaining: balanceRemaining,
+        payments: payments,
+        type: type,
+        cashierName: cashierName,
+        traEfdSignature: traEfdSignature,
+        status: status,
+        tableId: tableId,
+        branchId: branchId,
+      );
 
   Map<String, dynamic> toJson() => {
     'id': id, 'receipt_number': receiptNumber,
     'date': date.toIso8601String(),
     'customer_id': customerId, 'customer_name': customerName,
     'items': items.map((e) => e.toJson()).toList(),
-    'subtotal': subtotal, 'vat_amount': vatAmount, 'total': total,
+    'subtotal': subtotal,
+    'discount_amount': discountAmount,
+    'vat_amount': vatAmount, 'total': total,
     'paid_amount': paidAmount, 'balance_remaining': balanceRemaining,
     'payments': payments.map((e) => e.toJson()).toList(),
     'type': type.name, 'cashier_name': cashierName,

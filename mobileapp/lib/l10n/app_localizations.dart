@@ -86,7 +86,7 @@ class AppLocalizations {
   String navLabel(String key) {
     const en = {
       'home': 'Home', 'pos': 'POS', 'stock': 'Stock', 'clients': 'Clients',
-      'reports': 'Reports', 'bi': 'Profit BI', 'pending': 'Uncompleted',
+      'reports': 'Reports', 'bi': 'Profit BI', 'pending': 'Pending Sales',
       'suppliers': 'Suppliers', 'expenses': 'Expenses', 'branches': 'Branches',
       'settings': 'Settings', 'credit': 'Credit', 'myStipend': 'My Stipend',
       'documents': 'Documents',
@@ -94,7 +94,7 @@ class AppLocalizations {
     };
     const sw = {
       'home': 'Nyumbani', 'pos': 'POS', 'stock': 'Stoo', 'clients': 'Wateja',
-      'reports': 'Ripoti', 'bi': 'Faida BI', 'pending': 'Yasiyokamilika',
+      'reports': 'Ripoti', 'bi': 'Faida BI', 'pending': 'Yanasubiri Malipo',
       'suppliers': 'Wasambazaji', 'expenses': 'Matumizi', 'branches': 'Matawi',
       'settings': 'Mipangilio', 'credit': 'Mikopo', 'myStipend': 'Posho Yangu',
       'documents': 'Hati',
@@ -142,8 +142,10 @@ class AppLocalizations {
 
   String get pointOfSale => t('Point of Sale', 'Sehemu ya Mauzo');
   String get pay => t('Pay', 'Lipa');
-  String get payNow => t('Pay Now', 'Lipa Sasa');
-  String get saveAndNext => t('Save & Next', 'Hifadhi & Endelea');
+  String get payNow => t('Take Payment & Finish', 'Lipa & Kamilisha');
+  String get payNowHint => t('Normal sale — payment taken now', 'Mauzo ya kawaida — malipo sasa');
+  String get saveAndNext => t('Park Sale (No Payment)', 'Hifadhi Bila Malipo');
+  String get saveAndNextHint => t('Serve next customer — pay later', 'Mteja anayefuata — malipo baadaye');
   String get orderSummary => t('Order Summary', 'Muhtasari wa Agizo');
   String get clearAll => t('Clear all', 'Futa yote');
   String get cartEmpty => t('Cart is empty', 'Kikapu hakina bidhaa');
@@ -159,7 +161,10 @@ class AppLocalizations {
   String get barcodeSku => t('Barcode or SKU', 'Barcode au SKU');
   String get find => t('Find', 'Tafuta');
   String get print => t('Print', 'Chapisha');
-  String get saleSaved => t('Sale saved — continue with next customer', 'Mauzo yamehifadhiwa — endelea na mteja anayefuata');
+  String get saleSaved => t(
+        'Sale parked — complete payment under Pending Sales',
+        'Mauzo yamehifadhiwa — kamilisha malipo kwenye Yanasubiri Malipo',
+      );
   String get couldNotLoadProducts => t('Could not load products', 'Imeshindwa kupakia bidhaa');
   String get noProductFound => t('No product found for', 'Hakuna bidhaa kwa');
   String get added => t('Added', 'Imeongezwa');
@@ -192,17 +197,17 @@ class AppLocalizations {
   String get addProduct => t('Add Product', 'Ongeza Bidhaa');
   String get stock => t('Stock', 'Stoo');
 
-  String get uncompletedSales => t('Uncompleted Sales', 'Mauzo Yasiyokamilika');
-  String get pendingSubtitle => t('Standalone queue — no sales are lost', 'Foleni — hakuna mauzo yanayopotea');
-  String get noPendingSales => t('No pending sales', 'Hakuna mauzo yaliyosalia');
-  String get pendingHint => t('Use Save & Next in POS to park a sale', 'Tumia Hifadhi & Endelea kwenye POS');
+  String get uncompletedSales => t('Pending Sales', 'Mauzo Yanayosubiri Malipo');
+  String get pendingSubtitle => t('Sales waiting for payment — nothing is lost', 'Mauzo yanayosubiri malipo — hakuna kinachopotea');
+  String get noPendingSales => t('No pending sales', 'Hakuna mauzo yanayosubiri');
+  String get pendingHint => t('Use Park Sale (No Payment) in POS to hold a cart', 'Tumia Hifadhi Bila Malipo kwenye POS kuhifadhi kikapu');
   String get openPos => t('Open POS', 'Fungua POS');
-  String get resumeInPos => t('Resume in POS', 'Endelea kwenye POS');
-  String get quickComplete => t('Quick Complete', 'Kamilisha Haraka');
+  String get resumeInPos => t('Continue in POS', 'Endelea kwenye POS');
+  String get quickComplete => t('Complete Payment', 'Kamilisha Malipo');
   String get paymentReference => t('Payment reference (optional)', 'Nambari ya malipo (hiari)');
   String get complete => t('Complete', 'Kamilisha');
   String get saleCompleted => t('Sale completed successfully', 'Mauzo yamekamilika');
-  String get localDraft => t('LOCAL', 'NDANI');
+  String get localDraft => t('CART', 'KIKAPU');
 
   String get reports => t('Reports & Analytics', 'Ripoti & Takwimu');
   String get reportsSubtitle => t('Sales insights and performance', 'Maelezo ya mauzo na utendaji');
@@ -290,10 +295,13 @@ class AppLocalizations {
   String get requiredField => t('Required', 'Inahitajika');
   String get enterValidPhone => t('Enter valid phone', 'Weka simu sahihi');
 
-  String get uncompletedTransactions => t('Uncompleted Transactions', 'Miamala Isiyokamilika');
-  String needAttentionCount(int n) => t('$n need attention. No sales are lost.', '$n yanahitaji umakini. Hakuna mauzo yanayopotea.');
-  String get localDrafts => t('Local Drafts', 'Rasimu za Ndani');
-  String get serverPending => t('Server Pending', 'Yanasubiri Seva');
+  String get uncompletedTransactions => t('Pending Sales Queue', 'Foleni ya Mauzo Yanayosubiri');
+  String needAttentionCount(int n) => t(
+        '$n sale(s) awaiting payment. Nothing is lost.',
+        'mauzo $n yanasubiri malipo. Hakuna kinachopotea.',
+      );
+  String get localDrafts => t('In-Progress Carts', 'Vikapu Vinavyoendelea');
+  String get serverPending => t('Awaiting Payment', 'Yanasubiri Malipo');
   String get genericCustomer => t('Customer', 'Mteja');
   String itemsUnits(int items, String units) => t('$items items · $units units', 'bidhaa $items · vitengo $units');
   String get walkInCustomer => t('Walk-in Customer', 'Mteja wa Taslimu');
@@ -477,7 +485,7 @@ class AppLocalizations {
   String get grossSubtotal => t('Gross subtotal', 'Jumla kabla ya punguzo');
   String get discount => t('Discount', 'Punguzo');
   String get processing => t('Processing…', 'Inachakata…');
-  String get completeSale => t('Complete Sale', 'Kamilisha Mauzo');
+  String get completeSale => t('Take Payment & Finish', 'Lipa & Kamilisha');
   String get saleNotRecorded => t('Sale was not recorded', 'Mauzo hayakurekodiwa');
   String errorMessage(String e) => t('Error: $e', 'Hitilafu: $e');
   String itemCount(int n) => t('$n item${n == 1 ? '' : 's'}', 'bidhaa $n');

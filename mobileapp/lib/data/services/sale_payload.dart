@@ -9,7 +9,11 @@ Map<String, dynamic> saleToApiPayload({
   required String clientTransactionId,
   bool finalize = true,
   String? branchId,
+  double discountAmount = 0,
 }) {
+  final discount = discountAmount > 0
+      ? discountAmount
+      : cart.items.fold<double>(0, (s, i) => s + i.discountAmount);
   return {
     'items': cart.items
         .map((i) => {
@@ -22,6 +26,7 @@ Map<String, dynamic> saleToApiPayload({
               'original_unit_price': i.product.price,
             })
         .toList(),
+    'discount_amount': discount,
     'customer_id': cart.customerId,
     'customer_name': cart.customerName,
     'payments': payments,

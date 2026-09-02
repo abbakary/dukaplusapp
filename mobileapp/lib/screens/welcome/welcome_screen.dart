@@ -429,40 +429,49 @@ class _LangButton extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      useSafeArea: true,
       builder: (_) => Material(
-        color: Colors.transparent,
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 10),
-                Container(
-                  width: 40, height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
+        color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        clipBehavior: Clip.antiAlias,
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 10),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                child: Text(
+                  l10n.chooseLanguage,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                  child: Text(l10n.chooseLanguage,
-                    style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w700)),
-                ),
-                _LangTile(
-                  flag: '🇹🇿', label: l10n.languageSw,
-                  lang: AppLanguage.sw, ref: ref),
-                _LangTile(
-                  flag: '🇬🇧', label: l10n.languageEn,
-                  lang: AppLanguage.en, ref: ref),
-                const SizedBox(height: 8),
-              ],
-            ),
+              ),
+              _LangTile(
+                flag: '🇹🇿',
+                label: l10n.languageSw,
+                lang: AppLanguage.sw,
+                ref: ref,
+              ),
+              _LangTile(
+                flag: '🇬🇧',
+                label: l10n.languageEn,
+                lang: AppLanguage.en,
+                ref: ref,
+              ),
+              const SizedBox(height: 8),
+            ],
           ),
         ),
       ),

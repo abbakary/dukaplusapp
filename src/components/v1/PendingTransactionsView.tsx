@@ -4,7 +4,6 @@ import {
   ArrowRight,
   CheckCircle2,
   Clock,
-  Zap,
   User,
   CreditCard,
   Package,
@@ -238,15 +237,15 @@ export const PendingTransactionsView: React.FC<PendingTransactionsViewProps> = (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl p-6 text-white shadow-lg">
         <div className="flex items-center gap-3">
-          <Zap className="w-8 h-8" />
+          <Clock className="w-8 h-8" />
           <div>
             <h2 className="text-xl font-black">
-              {isSw ? '⚡ Mauzo Yasiyokamilika (Emergency Queue)' : '⚡ Uncompleted Transactions'}
+              {isSw ? 'Mauzo Yanayosubiri Malipo' : 'Pending Sales'}
             </h2>
             <p className="text-sm text-amber-100 mt-1">
               {isSw
-                ? `${filtered.length} mauzo yanahitaji ukamilishaji. Hakuna mauzo yaliyopotea.`
-                : `${filtered.length} transactions need attention. No sales are lost.`}
+                ? `${filtered.length} mauzo yamehifadhiwa bila malipo. Kamilisha malipo hapa — hakuna mauzo yaliyopotea.`
+                : `${filtered.length} sale(s) saved without payment. Complete payment here — nothing is lost.`}
             </p>
           </div>
         </div>
@@ -281,7 +280,7 @@ export const PendingTransactionsView: React.FC<PendingTransactionsViewProps> = (
             }}
             className="ml-auto px-4 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-black cursor-pointer"
           >
-            {isSw ? '⚡ Kamilisha Yote' : '⚡ Fix All'}
+            {isSw ? 'Kamilisha Yote' : 'Complete All'}
           </button>
         )}
       </div>
@@ -318,7 +317,9 @@ export const PendingTransactionsView: React.FC<PendingTransactionsViewProps> = (
                 <div key={d.id} className="bg-white rounded-2xl border border-amber-200 p-5 space-y-3 shadow-xs">
                   <div className="flex justify-between items-start">
                     <span className="text-xs font-mono text-[#605E5C]">{d.clientTransactionId.slice(0, 12)}</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">LOCAL</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                      {isSw ? 'KIKAPU' : 'CART'}
+                    </span>
                   </div>
                   <div className="font-bold text-[#323130]">{d.customerName || (isSw ? 'Mteja' : 'Customer')}</div>
                   <div className="text-sm text-[#605E5C]">{itemCount} {isSw ? 'bidhaa' : 'items'}</div>
@@ -327,7 +328,7 @@ export const PendingTransactionsView: React.FC<PendingTransactionsViewProps> = (
                     onClick={() => onResumeDraft(d)}
                     className="w-full py-2.5 rounded-xl bg-[#6264A7] text-white text-sm font-bold cursor-pointer flex items-center justify-center gap-2"
                   >
-                    {isSw ? 'Endelea POS' : 'Resume in POS'} <ArrowRight className="w-4 h-4" />
+                    {isSw ? 'Endelea kwenye POS' : 'Continue in POS'} <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               );
@@ -360,7 +361,7 @@ export const PendingTransactionsView: React.FC<PendingTransactionsViewProps> = (
                       onClick={() => onResumePendingSale(sale)}
                       className="flex-1 py-2.5 rounded-xl border border-[#6264A7] text-[#6264A7] text-sm font-bold cursor-pointer flex items-center justify-center gap-1"
                     >
-                      {isSw ? 'Endelea POS' : 'Resume in POS'} <ArrowRight className="w-4 h-4" />
+                      {isSw ? 'Endelea kwenye POS' : 'Continue in POS'} <ArrowRight className="w-4 h-4" />
                     </button>
                   )}
                   <button
@@ -371,7 +372,7 @@ export const PendingTransactionsView: React.FC<PendingTransactionsViewProps> = (
                   >
                     {finalizingId === sale.id
                       ? (isSw ? 'Inakamilisha…' : 'Completing…')
-                      : (isSw ? 'Kamilisha Haraka' : 'Quick Complete')}
+                      : (isSw ? 'Kamilisha Malipo' : 'Complete Payment')}
                   </button>
                 </div>
               </div>
@@ -384,7 +385,7 @@ export const PendingTransactionsView: React.FC<PendingTransactionsViewProps> = (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
           <div className="bg-white rounded-2xl p-6 max-w-lg w-full space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
             <h3 className="font-black text-lg">
-              {isSw ? 'Msaidizi wa Ukamilishaji' : 'Sale Completion Assistant'}
+              {isSw ? 'Kamilisha Malipo' : 'Complete Payment'}
             </h3>
             <p className="text-sm text-[#605E5C]">
               {completionTarget.sale.receiptNumber} — {formatTSh(completionTarget.sale.total)}

@@ -1,4 +1,5 @@
 import { api } from '@/lib/api';
+import { computeSaleDiscountAmount } from './saleDiscountUtils';
 import type {
   BusinessType,
   CalendarEvent,
@@ -267,30 +268,36 @@ export function mapPurchaseOrder(po: Record<string, unknown>): PurchaseOrder {
 
 export function mapSale(s: Record<string, unknown>): SaleTransaction {
   const items = (s.items as Array<Record<string, unknown>>) ?? [];
-  return {
+  const mappedItems = items.map(i => ({
+    productId: (i.product_id as string) ?? '',
+    productName: (i.product_name as string) ?? '',
+    quantity: Number(i.quantity ?? 0),
+    unitPrice: Number(i.unit_price ?? 0),
+    total: Number(i.total ?? i.total_price ?? 0),
+    discountPercent: Number(i.discount_percent ?? 0),
+    originalUnitPrice: i.original_unit_price != null ? Number(i.original_unit_price) : undefined,
+  }));
+  const sale: SaleTransaction = {
     id: s.id as string,
     receiptNumber: (s.receipt_number as string) ?? '',
     date: String(s.created_at ?? '').replace('T', ' ').slice(0, 16),
     customerId: (s.customer_id as string) ?? undefined,
     customerName: (s.customer_name as string) ?? 'Walk-in',
-    items: items.map(i => ({
-      productId: (i.product_id as string) ?? '',
-      productName: (i.product_name as string) ?? '',
-      quantity: (i.quantity as number) ?? 0,
-      unitPrice: (i.unit_price as number) ?? 0,
-      total: (i.total as number) ?? 0,
-    })),
-    subtotal: (s.subtotal as number) ?? 0,
-    vatAmount: (s.vat_amount as number) ?? 0,
-    total: (s.total as number) ?? 0,
-    paidAmount: (s.paid_amount as number) ?? 0,
-    balanceRemaining: (s.balance_remaining as number) ?? 0,
+    items: mappedItems,
+    subtotal: Number(s.subtotal ?? 0),
+    discountAmount: s.discount_amount != null ? Number(s.discount_amount) : undefined,
+    vatAmount: Number(s.vat_amount ?? 0),
+    total: Number(s.total ?? 0),
+    paidAmount: Number(s.paid_amount ?? 0),
+    balanceRemaining: Number(s.balance_remaining ?? 0),
     payments: (s.payments as SaleTransaction['payments']) ?? [],
     type: (s.sale_type as SaleTransaction['type']) ?? 'full',
     cashierName: (s.cashier_name as string) ?? '',
     traEfdSignature: (s.tra_efd_signature as string) ?? '',
     status: (s.status as SaleTransaction['status']) ?? 'completed',
   };
+  sale.discountAmount = computeSaleDiscountAmount(sale);
+  return sale;
 }
 
 export function mapStockMovement(m: Record<string, unknown>): StockMovement {
@@ -568,6 +575,7 @@ export function saleToApiPayload(sale: SaleTransaction, options?: { finalize?: b
   const finalize =
     options?.finalize ??
     (sale.status === 'completed' || sale.status === 'pending_credit');
+  const discountAmount = computeSaleDiscountAmount(sale);
   return {
     items: sale.items.map(i => ({
       product_id: i.productId,
@@ -578,6 +586,7 @@ export function saleToApiPayload(sale: SaleTransaction, options?: { finalize?: b
       discount_percent: i.discountPercent ?? 0,
       original_unit_price: i.originalUnitPrice ?? i.unitPrice,
     })),
+    discount_amount: discountAmount,
     customer_id: sale.customerId || null,
     customer_name: sale.customerName,
     payments: (sale.payments ?? []).map(p => ({

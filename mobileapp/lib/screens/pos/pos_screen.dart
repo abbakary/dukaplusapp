@@ -10,6 +10,7 @@ import '../../data/models/sale_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/utils/product_qr.dart';
 import '../../providers/cart_provider.dart';
+import '../../core/utils/sale_discount_utils.dart';
 import '../../providers/business_settings_provider.dart';
 import '../../providers/products_provider.dart';
 import '../../providers/sales_provider.dart';
@@ -20,6 +21,8 @@ import '../../providers/locale_provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/api_provider.dart';
 import '../../providers/permissions_provider.dart';
+import '../../core/utils/network_errors.dart';
+import '../../widgets/empty_state.dart';
 import '../../widgets/qr_scanner_sheet.dart';
 import '../../widgets/shimmer_loader.dart';
 import '../../widgets/search_bar_widget.dart';
@@ -41,7 +44,12 @@ Future<void> _openPaymentSheet(BuildContext context) async {
 }
 
 void _showSaleSuccessDialog(BuildContext context, SaleTransaction sale) {
-  final l10n = ProviderScope.containerOf(context).read(appLocalizationsProvider);
+  final container = ProviderScope.containerOf(context);
+  final l10n = container.read(appLocalizationsProvider);
+  final settings = container.read(businessSettingsProvider);
+  final discount = computeSaleDiscountAmount(sale);
+  final showDiscount =
+      settings.discountEnabled && settings.showDiscountOnReceipts && discount > 0;
   showDialog<void>(
     context: context,
     barrierDismissible: true,
@@ -50,6 +58,7 @@ void _showSaleSuccessDialog(BuildContext context, SaleTransaction sale) {
       contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
       content: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
             padding: const EdgeInsets.all(14),
@@ -62,21 +71,51 @@ void _showSaleSuccessDialog(BuildContext context, SaleTransaction sale) {
           const SizedBox(height: 14),
           Text(
             l10n.saleComplete,
+            textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 6),
           Text(
             l10n.receiptNumber(sale.receiptNumber),
+            textAlign: TextAlign.center,
             style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
           ),
-          const SizedBox(height: 8),
-          Text(
-            AppFormatters.tsh(sale.total),
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: AppColors.primary,
+          const SizedBox(height: 12),
+          ...sale.items.map(
+            (it) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${it.productName} x${it.quantity}${it.discountPercent > 0 ? ' (-${it.discountPercent.toStringAsFixed(0)}%)' : ''}',
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                  ),
+                  Text(AppFormatters.tsh(it.total), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                ],
+              ),
             ),
+          ),
+          const Divider(height: 16),
+          if (showDiscount) ...[
+            _ReceiptLine(
+              label: l10n.grossSubtotal,
+              value: AppFormatters.tsh(saleGrossSubtotal(sale)),
+            ),
+            _ReceiptLine(
+              label: l10n.discount,
+              value: '- ${AppFormatters.tsh(discount)}',
+              valueColor: AppColors.warning,
+            ),
+          ],
+          _ReceiptLine(label: l10n.subtotal, value: AppFormatters.tsh(sale.subtotal)),
+          if (sale.vatAmount > 0)
+            _ReceiptLine(label: l10n.vat18, value: AppFormatters.tsh(sale.vatAmount)),
+          _ReceiptLine(
+            label: l10n.total,
+            value: AppFormatters.tsh(sale.total),
+            bold: true,
           ),
         ],
       ),
@@ -104,6 +143,38 @@ void _showSaleSuccessDialog(BuildContext context, SaleTransaction sale) {
       ],
     ),
   );
+}
+
+class _ReceiptLine extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color? valueColor;
+  final bool bold;
+
+  const _ReceiptLine({
+    required this.label,
+    required this.value,
+    this.valueColor,
+    this.bold = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final style = TextStyle(
+      fontSize: bold ? 13 : 11,
+      fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
+      color: valueColor,
+    );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: style.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w500))),
+          Text(value, style: style),
+        ],
+      ),
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -324,51 +395,20 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 itemBuilder: (_, __) => const ShimmerBox(
                     width: double.infinity, height: 120, radius: 12),
               ),
-              error: (_, __) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.cloud_off_rounded,
-                          size: 40, color: AppColors.textHint),
-                      const SizedBox(height: 12),
-                      Text(l10n.couldNotLoadProducts,
-                          style: const TextStyle(color: AppColors.textSecondary)),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: () =>
-                            ref.invalidate(productsProvider),
-                        child: Text(l10n.retry),
-                      ),
-                    ],
-                  ),
-                ),
+              error: (e, _) => ErrorState(
+                title: l10n.somethingWentWrong,
+                message: apiErrorMessage(e),
+                retryLabel: l10n.retry,
+                onRetry: () => ref.invalidate(productsProvider),
               ),
               data: (products) {
                 final filtered = _filter(products, l10n);
                 if (filtered.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.search_off_rounded,
-                              size: 40, color: primary.withAlpha(70)),
-                          const SizedBox(height: 10),
-                          Text(
-                            _searchQuery.isNotEmpty
-                                ? l10n.noResultsFor(_searchQuery)
-                                : l10n.noProductsInCategory,
-                            style: const TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 13),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
+                  return EmptyState(
+                    icon: Icons.search_off_rounded,
+                    title: _searchQuery.isNotEmpty
+                        ? l10n.noResultsFor(_searchQuery)
+                        : l10n.noProductsInCategory,
                   );
                 }
                 return _buildGrid(filtered, primary);
@@ -432,14 +472,19 @@ class _PosAppBar extends ConsumerWidget implements PreferredSizeWidget {
           leading: const DrawerMenuButton(),
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(l10n.pointOfSale,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w600)),
               Text(
                 ref.watch(authProvider).user?.businessName ?? '',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style:
                     TextStyle(color: Colors.white.withAlpha(200), fontSize: 11),
               ),
@@ -1091,13 +1136,30 @@ class _CartSheet extends ConsumerWidget {
                                               const Icon(Icons.payment_rounded,
                                                   color: Colors.white, size: 18),
                                               const SizedBox(width: 6),
-                                              Text(l10n.payNow,
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w700,
-                                                  letterSpacing: 0.1,
-                                                )),
+                                              Flexible(
+                                                child: Column(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(l10n.payNow,
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 13,
+                                                        fontWeight: FontWeight.w700,
+                                                        letterSpacing: 0.1,
+                                                      )),
+                                                    Text(l10n.payNowHint,
+                                                      style: TextStyle(
+                                                        color: Colors.white.withValues(alpha: 0.88),
+                                                        fontSize: 9,
+                                                        fontWeight: FontWeight.w500,
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
                                             ],
                                           ),
                                         ),
@@ -1107,23 +1169,47 @@ class _CartSheet extends ConsumerWidget {
                                 ],
                               ),
                               SizedBox(height: compact ? 8 : 10),
-                              // Save & Next — full width outlined
+                              // Park sale — full width outlined (no payment yet)
                               SizedBox(
                                 width: double.infinity,
-                                height: 44,
-                                child: OutlinedButton.icon(
+                                height: 52,
+                                child: OutlinedButton(
                                   onPressed: () => _saveAndNext(context, ref),
                                   style: OutlinedButton.styleFrom(
-                                    side: BorderSide(color: AppColors.border, width: 1.5),
-                                    foregroundColor: AppColors.textSecondary,
+                                    side: BorderSide(color: AppColors.warning.withValues(alpha: 0.55), width: 1.5),
+                                    foregroundColor: AppColors.warning,
+                                    backgroundColor: AppColors.warning.withValues(alpha: 0.06),
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                                   ),
-                                  icon: const Icon(Icons.save_outlined, size: 16),
-                                  label: Text(l10n.saveAndNext,
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    )),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.pause_circle_outline_rounded, size: 18),
+                                      const SizedBox(width: 8),
+                                      Flexible(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(l10n.saveAndNext,
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w700,
+                                              )),
+                                            Text(l10n.saveAndNextHint,
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w500,
+                                                color: AppColors.warning.withValues(alpha: 0.85),
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ],
@@ -1973,11 +2059,10 @@ class _CustomerPickerSheet extends ConsumerWidget {
 
     return DraggableScrollableSheet(
       initialChildSize: 0.6,
-      builder: (_, ctrl) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
+      builder: (_, ctrl) => Material(
+        color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           children: [
             const _Handle(),

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/config/business_settings.dart';
 import '../../core/config/document_templates.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/sale_document_printer.dart';
 import '../../data/models/sale_model.dart';
+import '../../providers/business_settings_provider.dart';
 import '../../providers/document_template_provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/locale_provider.dart';
@@ -32,6 +34,7 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
     final isSw = ref.watch(localeProvider) == AppLanguage.sw;
     final salesAsync = ref.watch(salesProvider);
     final docConfig = ref.watch(documentTemplateProvider);
+    final settings = ref.watch(businessSettingsProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -149,7 +152,7 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
                                   return OutlinedButton.icon(
                                     onPressed: busy
                                         ? null
-                                        : () => _printDoc(sale, type, docConfig, isSw),
+                                        : () => _printDoc(sale, type, docConfig, settings, isSw),
                                     icon: busy
                                         ? const SizedBox(
                                             width: 14,
@@ -183,11 +186,18 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
     SaleTransaction sale,
     DocumentType type,
     TenantDocumentConfig config,
+    BusinessSettings settings,
     bool isSw,
   ) async {
     setState(() => _printingId = sale.id);
     try {
-      await printSaleDocument(sale: sale, type: type, config: config, isSw: isSw);
+      await printSaleDocument(
+        sale: sale,
+        type: type,
+        config: config,
+        isSw: isSw,
+        settings: settings,
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -120,9 +120,11 @@ export function renderDocumentPreviewHtml(
   isSw: boolean,
 ): string {
   const rows = data.items.slice(0, 8).map(item => {
-    const line = item.unitPrice * item.quantity * (1 - (item.discountPercent ?? 0) / 100);
+    const pct = item.discountPercent ?? 0;
+    const label = pct > 0 ? `${item.description} (-${pct}%)` : item.description;
+    const line = item.unitPrice * item.quantity * (1 - pct / 100);
     return `<tr>
-      <td style="padding:6px 8px;border-bottom:1px solid #E5E7EB;font-size:10px;">${esc(item.description)}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #E5E7EB;font-size:10px;">${esc(label)}</td>
       <td style="padding:6px 8px;border-bottom:1px solid #E5E7EB;font-size:10px;text-align:center;">${item.quantity}</td>
       <td style="padding:6px 8px;border-bottom:1px solid #E5E7EB;font-size:10px;text-align:right;">${fmt(Math.round(item.unitPrice))}</td>
       <td style="padding:6px 8px;border-bottom:1px solid #E5E7EB;font-size:10px;text-align:right;font-weight:600;">${fmt(Math.round(line))}</td>

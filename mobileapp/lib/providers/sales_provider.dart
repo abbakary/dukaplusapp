@@ -1,12 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/sale_model.dart';
+import '../core/config/business_settings.dart';
 import '../data/models/cart_model.dart';
 import '../data/models/user_model.dart';
-import '../core/constants/app_constants.dart';
 import '../data/services/sale_payload.dart';
 import '../core/utils/offline_messages.dart';
 import '../data/services/offline_sync_service.dart';
 import 'api_provider.dart';
+import 'business_settings_provider.dart';
 import 'connectivity_provider.dart';
 
 final salesRefreshProvider = StateProvider<int>((ref) => 0);
@@ -68,7 +69,15 @@ class CompleteSaleNotifier extends StateNotifier<AsyncValue<SaleTransaction?>> {
     state = const AsyncValue.loading();
     try {
       final clientId = generateClientTransactionId();
-      final vatAmount = params.cart.subtotal * AppConstants.defaultVatRate;
+      final settings = _ref.read(businessSettingsProvider);
+      final totals = computeCartTotals(
+        grossSubtotal: params.cart.items.fold<double>(
+          0,
+          (s, i) => s + i.product.price * i.quantity,
+        ),
+        discountedSubtotal: params.cart.subtotal,
+        settings: settings,
+      );
       final paid = params.payments.fold<double>(
           0, (s, p) => s + (double.tryParse(p['amount'].toString()) ?? 0));
 
@@ -78,6 +87,7 @@ class CompleteSaleNotifier extends StateNotifier<AsyncValue<SaleTransaction?>> {
         type: params.type,
         clientTransactionId: clientId,
         finalize: params.finalize,
+        discountAmount: totals.discountAmount,
       );
 
       SaleTransaction sale;
@@ -88,7 +98,7 @@ class CompleteSaleNotifier extends StateNotifier<AsyncValue<SaleTransaction?>> {
         _ref.read(isOnlineProvider.notifier).setOnline(true);
       } catch (_) {
         _ref.read(isOnlineProvider.notifier).setOnline(false);
-        sale = _buildLocalSale(params, clientId, vatAmount, paid);
+        sale = _buildLocalSale(params, clientId, totals, paid);
         final sync = OfflineSyncService(_ref.read(apiClientProvider));
         await sync.enqueue({
           'entity_type': 'sale',
@@ -113,7 +123,7 @@ class CompleteSaleNotifier extends StateNotifier<AsyncValue<SaleTransaction?>> {
   SaleTransaction _buildLocalSale(
     CompleteSaleParams p,
     String clientId,
-    double vatAmount,
+    CartTotals totals,
     double paid,
   ) =>
       SaleTransaction(
@@ -129,13 +139,16 @@ class CompleteSaleNotifier extends StateNotifier<AsyncValue<SaleTransaction?>> {
                   quantity: i.quantity,
                   unitPrice: i.effectiveUnitPrice,
                   total: i.lineTotal,
+                  discountPercent: i.discountPercent,
+                  originalUnitPrice: i.product.price,
                 ))
             .toList(),
-        subtotal: p.cart.subtotal,
-        vatAmount: vatAmount,
-        total: p.cart.total,
+        subtotal: totals.subtotal,
+        discountAmount: totals.discountAmount,
+        vatAmount: totals.vatAmount,
+        total: totals.total,
         paidAmount: paid,
-        balanceRemaining: p.cart.total - paid,
+        balanceRemaining: totals.total - paid,
         payments: p.payments
             .map((x) => PaymentBreakdown(
                   method: x['method'].toString(),
