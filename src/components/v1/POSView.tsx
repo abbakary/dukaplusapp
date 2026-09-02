@@ -165,16 +165,17 @@ export const POSView: React.FC<POSViewProps> = ({
     resumeSaleIdRef.current = resumeSaleId ?? null;
   }, [resumeSaleId]);
 
+  // Payment Options — must be declared before effects that reference paymentMode
+  const [paymentMode, setPaymentMode] = useState<'full' | 'partial' | 'credit'>('full');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('cash');
+  const [amountPaidInput, setAmountPaidInput] = useState<string>('');
+
   React.useEffect(() => {
     if (!pricing.canUsePartialPayment && paymentMode !== 'full') {
       setPaymentMode('full');
     }
   }, [pricing.canUsePartialPayment, paymentMode]);
   
-  // Payment Options
-  const [paymentMode, setPaymentMode] = useState<'full' | 'partial' | 'credit'>('full');
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('cash');
-  const [amountPaidInput, setAmountPaidInput] = useState<string>('');
   const [lastCompletedSale, setLastCompletedSale] = useState<SaleTransaction | null>(null);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
 

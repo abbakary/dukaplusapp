@@ -14,6 +14,7 @@ import type { AuthUser, BusinessType, Language, SaaSPlanTier } from '@/types/v1'
 import { ALL_BUSINESS_TYPES, getBusinessProfile } from '@/lib/businessEngine';
 import { api } from '@/lib/api';
 import { loginAndLoadUser, mapApiUserToAuthUser, persistAuthUser } from '@/lib/authBridge';
+import { formatApiError } from '@/lib/formatApiError';
 import { useSaasPlans } from '@/context/SaasPlansContext';
 import { formatPlanPrice, planFeatures, planPeriod } from '@/lib/saasPlans';
 import { BrandLogo } from '@/components/ui/BrandLogo';
@@ -126,7 +127,7 @@ export const PublicRegisterWizardView: React.FC<PublicRegisterWizardViewProps> =
       confetti({ particleCount: 40, spread: 60, origin: { y: 0.6 } });
       onRegisterSuccess(user);
     } catch (err) {
-      setError(isSw ? `Usajili umeshindikana: ${(err as Error).message}` : `Registration failed: ${(err as Error).message}`);
+      setError(formatApiError(err, isSw));
     } finally {
       setLoading(false);
     }

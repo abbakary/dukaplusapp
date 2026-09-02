@@ -67,7 +67,11 @@ class ApiClient {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: res.statusText }));
-      throw new Error(typeof err.detail === 'string' ? err.detail : JSON.stringify(err.detail) || 'Request failed');
+      const detail = err.detail;
+      if (res.status === 403 && detail && typeof detail === 'object' && detail.code === 'subscription_required') {
+        throw new Error(detail.message || 'Subscription required — renew to restore access.');
+      }
+      throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail) || 'Request failed');
     }
     if (res.status === 204) return undefined as T;
     return res.json();
